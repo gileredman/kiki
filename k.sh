@@ -12,10 +12,10 @@ echo "	5) Pakai link gz mu sendiri"
 read -p "Pilih [1]: " PILIHOS
 
 case "$PILIHOS" in
-	1|"") PILIHOS="wget -O- https://fr1.teddyvps.com/iso/en_windows2012r2.gz | gunzip | dd of=/dev/vda";;
-	2) PILIHOS="wget -O- https://fr1.teddyvps.com/iso/en_windows2012r2.gz | gunzip | dd of=/dev/vda";;
-	3) PILIHOS="wget -O- https://fr1.teddyvps.com/iso/en_windows2012r2.gz | gunzip | dd of=/dev/vda";;
-	4) PILIHOS="wget -O- https://fr1.teddyvps.com/iso/en_windows2012r2.gz | gunzip | dd of=/dev/vda";;
+	1|"") PILIHOS="https://fr1.teddyvps.com/iso/en_windows2019_v2.gz";;
+	2) PILIHOS="https://fr1.teddyvps.com/iso/en_windows2016.gz";;
+	3) PILIHOS="https://fr1.teddyvps.com/iso/en_windows2012r2.gz";;
+	4) PILIHOS="https://fr1.teddyvps.com/iso/en_windows10_21h1.gz";;
 	5) read -p "Masukkan Link GZ mu : " PILIHOS;;
 	*) echo "pilihan salah"; exit;;
 esac
