@@ -4949,5 +4949,15 @@ fi
   fi
 }
 
+clear;clear;clear
+clear
+clear
+echo -e "${BLUE}┌──────────────────────────┐${NC}"
+echo -e "         ${BG_RED}ATTENTION${NC}"
+echo -e "${BLUE}└──────────────────────────┘${NC}"
+echo -e "${red}Proses instalasi akan segera dimulai.${NC}"
+echo -e "${red}Selama proses instalasi server tidak akan dapat diakses.${NC}"
+echo -e "${red}Perkiraan waktu instalasi adalah 15-30 menit.${NC}\n"
+echo -e ""
 read -n 1 -s -r -p "Press any key to continue installation: "
 reboot
