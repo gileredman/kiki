@@ -1,24 +1,23 @@
 #!/bin/bash
-##
-## License: GPL
-## It can reinstall Debian, Ubuntu, Kali, AlpineLinux, CentOS, AlmaLinux, RockyLinux, Fedora and Windows OS via network automatically without any other external measures and manual operations.
-## Default root password: LeitboGi0ro
-## Written By MoeClub.org
-## Blog: https://moeclub.org
-## Modified By 秋水逸冰
-## Blog: https://teddysun.com/
-## Modified By VPS收割者
-## Blog: https://www.idcoffer.com/
-## Modified By airium
-## Blog: https://github.com/airium
-## Modified By 王煎饼
-## Github: https://github.com/bin456789/
-## Modified By nat.ee
-## Forum: https://hostloc.com/space-uid-49984.html
-## Modified By Bohan Yang
-## Twitter: https://twitter.com/brentybh
-## Modified By Leitbogioro
-## Blog: https://www.zhihu.com/column/originaltechnic
+Green="\e[92;1m"
+RED="\033[1;31m"
+BG_RED="\033[41;97;1m" # BG MERAH
+BG_BLUE="\\033[44;97;1m" # BG BIRU
+CYAN="\033[96;1m"
+NC='\033[0m'
+YELLOW="\033[33m"
+BLUE="\033[36m"
+FONT="\033[0m"
+GREENBG="\033[42;37m"
+REDBG="\033[41;37m"
+OK="${Green}--->${FONT}"
+ERROR="${RED}[ERROR]${FONT}"
+GRAY="\e[1;30m"
+NC='\e[0m'
+red='\e[1;31m'
+green='\e[0;32m'
+Xark="\033[0m"
+Orange='\033[0;33m'
 
 # color
 underLine='\033[4m'
@@ -4899,5 +4898,5 @@ fi
 	fi
 }
 
-echo -ne "\n[${green}Finish${plain}] Input '${yellow}reboot${plain}' to continue the subsequential installation.\n"
-exit 1
+read -n 1 -s -r -p "Press any key to continue installation: "
+reboot
