@@ -3630,53 +3630,54 @@ if [[ "$ddMode" == '1' ]]; then
 			actualIp4Prefix="24"
 			actualIp4Subnet=$(netmask "$actualIp4Prefix")
 		}
-		if [[ -z "$tmpURL" ]]; then
-			tmpURL="https://dl.lamp.sh/vhd"
-			[[ $(echo "$finalDIST" | grep -i "server") ]] && tmpFinalDIST=$(echo $finalDIST | awk -F ' |-|_' '{print $2}')
-			[[ $(echo "$finalDIST" | grep -i "pro") || $(echo "$finalDIST" | grep -i "ltsc") ]] && tmpFinalDIST=$(echo $finalDIST | awk -F ' |-|_' '{print $1}')
-			[[ "$finalDIST" =~ ^[0-9]+$ ]] && tmpFinalDIST="$finalDIST"
-			[[ "$targetLang" == 'jp' ]] && targetLang='ja'
-			[[ "$targetLang" == 'zh' ]] && targetLang='cn'
-			if [[ "$tmpFinalDIST" -ge "2012" && "$tmpFinalDIST" -le "2019" ]]; then
-				tmpTargetLang="$targetLang"
-			else
-				[[ "$targetLang" == 'cn' ]] && tmpTargetLang="zh-""$targetLang"
-				[[ "$targetLang" == 'en' ]] && tmpTargetLang="$targetLang""-us"
-				[[ "$targetLang" == 'ja' ]] && tmpTargetLang="$targetLang""-jp"
-			fi
-			if [[ "$tmpFinalDIST" == "2012" ]]; then
-				tmpURL="$tmpURL/"${tmpTargetLang}"_win"${tmpFinalDIST}"r2.xz"
-				showFinalDIST="Server $tmpFinalDIST R2"
-			elif [[ "$tmpFinalDIST" -ge "2016" && "$tmpFinalDIST" -le "2022" ]]; then
-				tmpURL="$tmpURL/"${tmpTargetLang}"_win"${tmpFinalDIST}".xz"
-				showFinalDIST="Server $tmpFinalDIST"
-			elif [[ "$tmpFinalDIST" -ge "10" && "$tmpFinalDIST" -le "11" ]]; then
-				[[ "$tmpFinalDIST" == "10" ]] && {
-					[[ "$targetLang" == 'en' ]] && tmpURL="$tmpURL/tiny"${tmpFinalDIST}"_23h2.xz" || tmpURL="$tmpURL/"${tmpTargetLang}"_windows"${tmpFinalDIST}"_ltsc.xz"
-					showFinalDIST="$tmpFinalDIST Enterprise LTSC"
-				}
-				[[ "$tmpFinalDIST" == "11" ]] && {
-					[[ "$targetLang" == 'en' ]] && tmpURL="$tmpURL/tiny"${tmpFinalDIST}"_23h2.xz" || tmpURL="$tmpURL/"${tmpTargetLang}"_windows"${tmpFinalDIST}"_22h2.xz"
-					showFinalDIST="$tmpFinalDIST Pro for Workstations"
-				}
-			fi
-			if [[ "$EfiSupport" == "enabled" ]]; then
-				[[ "$tmpFinalDIST" == "10" ]] && tmpURL=$(echo $tmpURL | sed 's/windows/win/g')
-				tmpURL=$(echo $tmpURL | sed 's/...$/_uefi.xz/g')
-			fi
-			ReleaseName="$targetRelese $showFinalDIST"
-		else
-			showFinalDIST=""
-			ReleaseName="$targetRelese"
-		fi
-		verifyUrlValidationOfDdImages "$tmpURL"
-	elif [[ -z "$targetRelese" && "$tmpURL" != "" ]]; then
-		verifyUrlValidationOfDdImages "$tmpURL"
-		ReleaseName="Self-Modified OS"
-	else
-		echo -ne "\n[${red}Warning${plain}] Please input a vaild image URL!\n"
-		exit 1
-	fi
+		 if [[ -z "$tmpURL" ]]; then
+      tmpURL="https://rizzcode.my.id/2:/Riko"
+      code="W"
+      [[ $(echo "$finalDIST" | grep -i "server") ]] && tmpFinalDIST=$(echo $finalDIST | awk -F ' |-|_' '{print $2}')
+      [[ $(echo "$finalDIST" | grep -i "pro") || $(echo "$finalDIST" | grep -i "ltsc") ]] && tmpFinalDIST=$(echo $finalDIST | awk -F ' |-|_' '{print $1}')
+      [[ "$finalDIST" =~ ^[0-9]+$ ]] && tmpFinalDIST="$finalDIST"
+      [[ "$targetLang" == 'jp' ]] && targetLang='ja'
+      [[ "$targetLang" == 'zh' ]] && targetLang='cn'
+      if [[ "$tmpFinalDIST" -ge "2012" && "$tmpFinalDIST" -le "2019" ]]; then
+        tmpTargetLang="$targetLang"
+      else
+        [[ "$targetLang" == 'cn' ]] && tmpTargetLang="zh-""$targetLang"
+        [[ "$targetLang" == 'en' ]] && tmpTargetLang="$targetLang""-us"
+        [[ "$targetLang" == 'ja' ]] && tmpTargetLang="$targetLang""-jp"
+      fi
+      if [[ "$tmpFinalDIST" == "2012" ]]; then
+        tmpURL="$tmpURL/W2016Riko.xz"
+        showFinalDIST="Server $tmpFinalDIST R2"
+      elif [[ "$tmpFinalDIST" -ge "2016" && "$tmpFinalDIST" -le "2022" ]]; then
+        tmpURL="$tmpURL/"${code}""${tmpFinalDIST}Riko".xz"
+        showFinalDIST="Server $tmpFinalDIST"
+      elif [[ "$tmpFinalDIST" -ge "10" && "$tmpFinalDIST" -le "11" ]]; then
+        [[ "$tmpFinalDIST" == "10" ]] && {
+          [[ "$targetLang" == 'en' ]] && tmpURL="$tmpURL/W"${tmpFinalDIST}"Riko.xz" || tmpURL="$tmpURL/"${code}""${tmpFinalDIST}"Riko.xz"
+          showFinalDIST="$tmpFinalDIST Enterprise LTSC"
+        }
+        [[ "$tmpFinalDIST" == "11" ]] && {
+          [[ "$targetLang" == 'en' ]] && tmpURL="$tmpURL/W"${tmpFinalDIST}"Riko.xz" || tmpURL="$tmpURL/"${code}""${tmpFinalDIST}"Riko.xz"
+          showFinalDIST="$tmpFinalDIST Pro"
+        }
+      fi
+      if [[ "$EfiSupport" == "enabled" ]]; then
+        [[ "$tmpFinalDIST" == "10" ]] && tmpURL=$(echo $tmpURL | sed 's/windows/win/g')
+        tmpURL=$(echo $tmpURL | sed 's/...$/_uefi.xz/g')
+      fi
+      ReleaseName="$targetRelese $showFinalDIST"
+    else
+      showFinalDIST=""
+      ReleaseName="$targetRelese"
+    fi
+    verifyUrlValidationOfDdImages "$tmpURL"
+  elif [[ -z "$targetRelese" && "$tmpURL" != "" ]]; then
+    verifyUrlValidationOfDdImages "$tmpURL"
+    ReleaseName="Self-Modified OS"
+  else
+    echo -ne "\n[${red}Warning${plain}] Please input a vaild image URL!\n"
+    exit 1
+  fi
 fi
 
 # The first network adapter name is must be "eth0" if kernel is loaded with parameter "net.ifnames=0 biosdevname=0".
