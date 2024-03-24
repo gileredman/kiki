@@ -3966,7 +3966,44 @@ if [[ "$linux_relese" == 'debian' ]] || [[ "$linux_relese" == 'kali' ]] || [[ "$
 		[[ "$setRDP" == '1' ]] && [[ -n "$WinRemote" ]] && WinRDP
 		echo -ne "ECHO\0040SELECT\0040VOLUME\0075\0045\0045SystemDrive\0045\0045\0040\0076\0040\0042\0045SystemDrive\0045\0134diskpart\0056extend\0042\r\nECHO\0040EXTEND\0040\0076\0076\0040\0042\0045SystemDrive\0045\0134diskpart\0056extend\0042\r\nSTART\0040/WAIT\0040DISKPART\0040\0057S\0040\0042\0045SystemDrive\0045\0134diskpart\0056extend\0042\r\nDEL\0040\0057f\0040\0057q\0040\0042\0045SystemDrive\0045\0134diskpart\0056extend\0042\r\n\r\n" >>'/tmp/boot/net.tmp'
 		echo -ne "cd\0040\0057d\0040\0042\0045ProgramData\0045\0057Microsoft\0057Windows\0057Start\0040Menu\0057Programs\0057Startup\0042\r\ndel\0040\0057f\0040\0057q\0040net\0056bat\r\n\r\n\r\n" >>'/tmp/boot/net.tmp'
-		iconv -f 'UTF-8' -t 'GBK' '/tmp/boot/net.tmp' -o '/tmp/boot/net.bat'
+	
+     cat >/tmp/boot/net.bat<<EOF
+@echo off
+
+cd.>%windir%\GetAdmin
+if exist %windir%\GetAdmin (del /f /q "%windir%\GetAdmin") else (
+echo CreateObject^("Shell.Application"^).ShellExecute "%~s0", "%*", "", "runas", 1 >> "%temp%\Admin.vbs"
+"%temp%\Admin.vbs"
+del /f /q "%temp%\Admin.vbs"
+exit /b 2)
+
+echo Find Network Adapter Name and Index
+for /f "tokens=6-8" %%i in ('netsh interface ip show int ^| findstr /v /i "disconnected loopback" ^| findstr /n ^^^^ ^| findstr "^[4]"') do set interfaceName=%%i %%j %%k
+for /f "tokens=2" %%l in ('netsh interface ip show int ^| findstr /v /i "disconnected loopback" ^| findstr /n ^^^^ ^| findstr "^[4]"') do set interfaceIdx=%%l
+
+echo Setting Up Disk Extend...
+ECHO SELECT VOLUME=%%SystemDrive%% > "%SystemDrive%\diskpart.extend"
+ECHO EXTEND >> "%SystemDrive%\diskpart.extend"
+START /WAIT DISKPART /S "%SystemDrive%\diskpart.extend"
+del /f /q "%SystemDrive%\diskpart.extend"
+
+:: Write ipv4 static configs
+echo; %setipv4mode% | find "on" && goto:enable || goto:disable
+:enable
+wmic nicconfig where ipenabled=true call enablestatic(%staticip%),(%subnetmask%)
+::Using ipv4 of local server as a temporary "gateway" to make sure all of static ipv4 configs can be recognized by network service.
+wmic nicconfig where ipenabled=true call setgateways(%staticip%)
+::Replace temporary gateway to an actual one.
+wmic nicconfig where ipenabled=true call setgateways(%gateways%)
+wmic nicconfig where ipenabled=true call setdnsserversearchorder(%dnsserver1%,%dnsserver2%)
+cd /d "%ProgramData%/Microsoft/Windows/Start Menu/Programs/Startup"
+del /f /q net.bat
+echo Press any key to exit...
+PAUSE
+EOF
+:disable
+
+  #iconv -f 'UTF-8' -t 'GBK' '/tmp/boot/net.tmp' -o '/tmp/boot/net.bat'
 		rm -rf '/tmp/boot/net.tmp'
 	}
 	[[ "$ddMode" == '0' ]] && {
