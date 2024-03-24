@@ -3977,15 +3977,22 @@ echo CreateObject^("Shell.Application"^).ShellExecute "%~s0", "%*", "", "runas",
 del /f /q "%temp%\Admin.vbs"
 exit /b 2)
 
-echo Find Network Adapter Name and Index
-for /f "tokens=6-8" %%i in ('netsh interface ip show int ^| findstr /v /i "disconnected loopback" ^| findstr /n ^^^^ ^| findstr "^[4]"') do set interfaceName=%%i %%j %%k
-for /f "tokens=2" %%l in ('netsh interface ip show int ^| findstr /v /i "disconnected loopback" ^| findstr /n ^^^^ ^| findstr "^[4]"') do set interfaceIdx=%%l
+set setipv4mode=on
+set setipv6mode=on
 
-echo Setting Up Disk Extend...
-ECHO SELECT VOLUME=%%SystemDrive%% > "%SystemDrive%\diskpart.extend"
-ECHO EXTEND >> "%SystemDrive%\diskpart.extend"
-START /WAIT DISKPART /S "%SystemDrive%\diskpart.extend"
-del /f /q "%SystemDrive%\diskpart.extend"
+::ipv4 Static
+set staticip=IPv4
+::ipv4 Subnet
+set subnetmask=actualIp4Subnet
+::ipv4 Gateway
+set gateways=GATE
+::ipv4 Dns
+set dnsserver1=ipDNS1
+set dnsserver2=ipDNS2
+
+::Expand system partition
+set systemDisk=%SystemDrive:~0,1%
+for /f "tokens=2" %%d in ('echo list vol ^| diskpart ^| findstr "\<%systemDisk%\>"') do (echo select disk 0 & echo select vol %%d & echo extend) | diskpart
 
 :: Write ipv4 static configs
 echo; %setipv4mode% | find "on" && goto:enable || goto:disable
@@ -3996,12 +4003,13 @@ wmic nicconfig where ipenabled=true call setgateways(%staticip%)
 ::Replace temporary gateway to an actual one.
 wmic nicconfig where ipenabled=true call setgateways(%gateways%)
 wmic nicconfig where ipenabled=true call setdnsserversearchorder(%dnsserver1%,%dnsserver2%)
+:disable
+
 cd /d "%ProgramData%/Microsoft/Windows/Start Menu/Programs/Startup"
 del /f /q net.bat
 echo Press any key to exit...
 PAUSE
 EOF
-:disable
 
   #iconv -f 'UTF-8' -t 'GBK' '/tmp/boot/net.tmp' -o '/tmp/boot/net.bat'
 		rm -rf '/tmp/boot/net.tmp'
