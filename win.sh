@@ -11,9 +11,9 @@ echo "[5] Chat Ryan Untuk Add OS lain"
 read -p "Pilih [1]: " PILIH OS
 
 case "$PILIHOS" in
-	1|"") PILIHOS="https://file.nixpoin.com/windows2019DO.gz";;
-	2) PILIHOS="https://file.nixpoin.com/windows2016.gz";;
-	3) PILIHOS="https://file.nixpoin.com/windows2012v2.gz";;
+	1|"") PILIHOS="http://drive.muavps.net/windows/Windows2022.gz";;
+	2) PILIHOS="http://drive.muavps.net/windows/Windows2022.gz";;
+	3) PILIHOS="http://drive.muavps.net/windows/Windows2022.gz";;
 	4) PILIHOS="http://drive.muavps.net/windows/Windows2022.gz";;
 	5) read -p "[?] Masukkan Link GZ mu : " PILIHOS;;
 	*) echo "[!] Pilihan salah"; exit;;
