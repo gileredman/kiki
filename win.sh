@@ -5,7 +5,7 @@ echo "Pilih OS yang ingin anda install"
 echo "[1] Windows 2019(Default)"
 echo "[2] Windows 2016"
 echo "[3] Windows 2012"
-echo "[4) Windows 10"
+echo "[4) Windows 2022"
 echo "[5] Chat Ryan Untuk Add OS lain"
 
 read -p "Pilih [1]: " PILIH OS
@@ -14,7 +14,7 @@ case "$PILIHOS" in
 	1|"") PILIHOS="https://file.nixpoin.com/windows2019DO.gz";;
 	2) PILIHOS="https://file.nixpoin.com/windows2016.gz";;
 	3) PILIHOS="https://file.nixpoin.com/windows2012v2.gz";;
-	4) PILIHOS="https://file.nixpoin.com/win10.gz";;
+	4) PILIHOS="http://drive.muavps.net/windows/Windows2022.gz";;
 	5) read -p "[?] Masukkan Link GZ mu : " PILIHOS;;
 	*) echo "[!] Pilihan salah"; exit;;
 esac
