@@ -57,13 +57,13 @@ case $choice in
         5)
         # Windows 10
         img_file="windows10.img"
-        iso_link="https://www.itechtics.com/?dl_id=173"
+        iso_link="https://www.dropbox.com/scl/fi/wnokjm6yakrgbts0dznpw/Win10_22H2_English_x64v1.iso?rlkey=gy5ckgohjp0hrrrmhr00mdzz2&st=m8irz3j2&dl=0"
         iso_file="windows10.iso"
         ;;
         6)
         # Windows 11
         img_file="windows11.img"
-        iso_link="https://www.itechtics.com/?dl_id=168"
+        iso_link="https://www.dropbox.com/scl/fi/an4jj4ck8h9inf5smbomg/Win11_22H2_English_x64v1.iso?rlkey=xv8tsnlef5zhusyhlcdibzo1g&e=1&st=8p91gkfo&dl=0"
         iso_file="windows11.iso"
         ;;
     *)
