@@ -1,292 +1,114 @@
-#!/bin/bash
-#
-#Vars
-mounted=0
-GREEN='\033[1;32m';GREEN_D='\033[0;32m';RED='\033[0;31m';YELLOW='\033[0;33m';BLUE='\033[0;34m';NC='\033[0m'
-# Virtualization checking..
-virtu=$(egrep -i '^flags.*(vmx|svm)' /proc/cpuinfo | wc -l)
-if [ $virtu = 0 ] ; then echo -e "[Error] ${RED}Virtualization/KVM in your Server/VPS is OFF\nExiting...${NC}";
-else
-#
-# Deleting Previous Windows Installation by the Script
-#umount -l /mnt /media/script /media/sw
-#rm -rf /mediabots /floppy /virtio /media/* /tmp/*
-#rm -f /sw.iso /disk.img 
-# installing required Ubuntu packages
-dist=$(hostnamectl | egrep "Operating System" | cut -f2 -d":" | cut -f2 -d " ")
-if [ $dist = "CentOS" ] ; then
-	printf "Y\n" | yum install sudo -y
-	sudo yum install wget vim curl genisoimage -y
-	# Downloading Portable QEMU-KVM
-	echo "Downloading QEMU"
-	sudo yum update -y
-	sudo yum install -y qemu-kvm
-elif [ $dist = "Ubuntu" -o $dist = "Debian" ] ; then
-	printf "Y\n" | apt-get install sudo -y
-	sudo apt-get install vim curl genisoimage -y
-	# Downloading Portable QEMU-KVM
-	echo "Downloading QEMU"
-	sudo apt-get update
-	sudo apt-get install -y qemu-kvm
-fi
-sudo ln -s /usr/bin/genisoimage /usr/bin/mkisofs
-# Downloading resources
-sudo mkdir /mediabots /floppy /virtio
-link1_status=$(curl -Is https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66749/17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso| grep HTTP | cut -f2 -d" " | head -1)
-link2_status=$(curl -Is https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66749/17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso | grep HTTP | cut -f2 -d" ")
-#sudo wget -P /mediabots https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66749/17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso # Windows Server 2012 R2 
-if [ $link1_status = "200" ] ; then 
-	sudo wget -O /mediabots/WS2012R2.ISO https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66749/17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso 
-elif [ $link2_status = "200" -o $link2_status = "301" -o $link2_status = "302" ] ; then 
-	sudo wget -P /mediabots https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66749/17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso
-else
-	echo -e "${RED}[Error]${NC} ${YELLOW}Sorry! None of Windows OS image urls are available , please report about this issue on Github page : ${NC}https://github.com/mediabots/Linux-to-Windows-with-QEMU"
-	echo "Exiting.."
-	sleep 30
-	exit 1
-fi
-sudo wget -P /floppy https://ftp.mozilla.org/pub/firefox/releases/64.0/win32/en-US/Firefox%20Setup%2064.0.exe
-sudo mv /floppy/'Firefox Setup 64.0.exe' /floppy/Firefox.exe
-sudo wget -P /floppy https://downloadmirror.intel.com/23073/eng/PROWinx64.exe # Intel Network Adapter for Windows Server 2012 R2 
-# Powershell script to auto enable remote desktop for administrator
-sudo touch /floppy/EnableRDP.ps1
-sudo echo -e "Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\' -Name \"fDenyTSConnections\" -Value 0" >> /floppy/EnableRDP.ps1
-sudo echo -e "Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp\' -Name \"UserAuthentication\" -Value 1" >> /floppy/EnableRDP.ps1
-sudo echo -e "Enable-NetFirewallRule -DisplayGroup \"Remote Desktop\"" >> /floppy/EnableRDP.ps1
-# Downloading Virtio Drivers
-sudo wget -P /virtio https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
-# creating .iso for Windows tools & drivers
-sudo mkisofs -o /sw.iso /floppy
-#
-#Enabling KSM
-sudo echo 1 > /sys/kernel/mm/ksm/run
-#Free memories
-sync; sudo echo 3 > /proc/sys/vm/drop_caches
-# Gathering System information
-idx=0
-fs=($(df | awk '{print $1}'))
-for j in $(df | awk '{print $6}');do if [ $j = "/" ] ; then os=${fs[$idx]};echo $os;fi;idx=$((idx+1));done
-#
-ip=$(curl ifconfig.me)
-echo "Linux Distro : "$dist 
-virtualization=$(lscpu | grep Virtualization: | head -1 | cut -f2 -d":" | awk '{$1=$1;print}')
-echo "Virtualization : "$virtualization
-model=$(lscpu | grep "Model name:" | head -1 | cut -f2 -d":" | awk '{$1=$1;print}')
-echo "CPU Model : "$model
-cpus=$(lscpu | grep CPU\(s\) | head -1 | cut -f2 -d":" | awk '{$1=$1;print}')
-echo "No. of CPU cores : "$cpus
-if [ $dist = "Debian" ] ;then availableRAMcommand="free -m | head -2 | tail -1 | awk '{print \$4}'" ; elif [ $dist = "Ubuntu" -o $dist = "CentOS" ] ;then availableRAMcommand="free -m | tail -2 | head -1 | awk '{print \$7}'"; fi
-availableRAM=$(echo $availableRAMcommand | bash)
-echo "Available RAM : "$availableRAM" MB"
-diskNumbers=$(fdisk -l | grep "Disk /dev/" | wc -l)
-partNumbers=$(lsblk | egrep "part" | wc -l) # $(fdisk -l | grep "^/dev/" | wc -l) 
-firstDisk=$(fdisk -l | grep "Disk /dev/" | head -1 | cut -f1 -d":" | cut -f2 -d" ")
-freeDisk=$(df | grep "^/dev/" | awk '{print$1 " " $4}' | sort -g -k 2 | tail -1 | cut -f2 -d" ")
-# Windows required at least 25 GB free disk space
-firstDiskLow=0
-if [ $(expr $freeDisk / 1024 / 1024 ) -ge 25 ]; then
-	newDisk=$(expr $freeDisk \* 90 / 100 / 1024)
-	if [ $(expr $newDisk / 1024 ) -lt 25 ] ; then newDisk=25600 ; fi
-else
-	firstDiskLow=1
-fi
-#
-# setting up default values
-custom_param_os="/mediabots/"$(ls /mediabots)
-custom_param_sw="/sw.iso"
-custom_param_virtio="/virtio/"$(ls /virtio)
-#
-custom_param_ram="-m "$(expr $availableRAM - 200 )"M"
-skipped=0
-partition=0
-other_drives=""
-format=",format=raw"
-if [ $dist	= "CentOS" ] ; then
-	qemupath=$(whereis qemu-kvm | sed "s/ /\n/g" | egrep "^/usr/libexec/")
-	#b=($(lsblk | egrep "part"  |  tr -s '[:space:]' | cut -f1 -d" " | tr -cd "[:print:]\n" | sed 's/^/\/dev\//'))
-else
-	qemupath=$(whereis qemu-system-x86_64 | cut -f2 -d" ")
-	#b=($(fdisk -l | grep "^/dev/" | tr -d "*" | tr -s '[:space:]' | cut -f1 -d" "))
-fi
-if [ $diskNumbers -eq 1 ] ; then # opened 1st if
-if [ $availableRAM -ge 4650 ] ; then # opened 2nd if
-	echo -e "${BLUE}For below option pass${NC} yes ${BLUE}iff, your VPS/Server came with${NC} boot system in ${NC}${RED}'RESCUE'${NC} mode ${BLUE}feature${NC}"
-	read -r -p "Do you want to completely delete your current Linux O.S.? (yes/no) : " deleteLinux
-	deleteLinux=$(echo "$deleteLinux" | head -c 1)
-	if [ ! -z $deleteLinux ] && [ $deleteLinux = 'Y' -o $deleteLinux = 'y' ] ; then
-		sudo wget -qO- /tmp https://archive.org/download/vkvm.tar_201903/vkvm.tar.gz | sudo tar xvz -C /tmp
-		qemupath=/tmp/qemu-system-x86_64
-		echo "erasing primary disk data"
-		sudo dd if=/dev/zero of=$firstDisk bs=1M count=1 # blank out the disk
-		echo "mounting devices"
-		mount -t tmpfs -o size=4500m tmpfs /mnt
-		mv /mediabots/* /mnt
-		mkdir /media/sw
-		mount -t tmpfs -o size=121m tmpfs /media/sw
-		mv /sw.iso /media/sw
-		custom_param_os="/mnt/"$(ls /mnt)
-		custom_param_sw="/media/sw/sw.iso"
-		availableRAM=$(echo $availableRAMcommand | bash)
-		custom_param_disk=$firstDisk
-		custom_param_ram="-m "$(expr $availableRAM - 500 )"M"
-		format=""
-		mounted=1
-	else
-		if [ $firstDiskLow = 0 ] ; then
-			if [ $partNumbers -gt 1 ] ; then 
-				idx=0;ix=0;
-				#for i in $(fdisk -l | grep "^/dev/" | tr -d "*" | tr -s '[:space:]' | cut -f5 -d" "); do
-				for i in $(lsblk | egrep "part"  |  tr -s '[:space:]' | cut -f4 -d" "); do
-				b=($(lsblk | egrep "part"  |  tr -s '[:space:]' | cut -f1 -d" " | tr -cd "[:alnum:]\n" | sed 's/^/\/dev\//'))
-				if [[ $i == *"G"  ]]; then a=$(echo $i | tr -d "G"); a=${a%.*} ; if [ $a -ge 25 -a $ix = 0 -a ${b[idx]} != $os ] ; then firstDisk=${b[idx]} ; custom_param_disk=$firstDisk ; partition=1 ; ix=$((ix+3)) ; elif [ $a -ge 25 -a $ix = 3 -a ${b[idx]} != $os ] ; then other_drives="-drive file=${b[idx]},index=$ix,media=disk,format=raw " ; fi ; fi ;
-				idx=$((idx+1));
-				done
-				if [ $partition = 0 ] ;then 
-					echo "creating disk image"
-					sudo dd if=/dev/zero of=/disk.img bs=1024k seek=$newDisk count=0
-					custom_param_disk="/disk.img"
-				fi
-			else
-				echo "creating disk image"
-				sudo dd if=/dev/zero of=/disk.img bs=1024k seek=$newDisk count=0
-				custom_param_disk="/disk.img"
-			fi
-		else
-			skipped=1
-		fi
-	fi
-else
-	if [ $firstDiskLow = 0 ] ; then
-		if [ $partNumbers -gt 1 ] ; then 
-			idx=0;ix=0;
-			for i in $(lsblk | egrep "part"  |  tr -s '[:space:]' | cut -f4 -d" "); do
-			b=($(lsblk | egrep "part"  |  tr -s '[:space:]' | cut -f1 -d" " | tr -cd "[:alnum:]\n" | sed 's/^/\/dev\//'))
-			if [[ $i == *"G"  ]]; then a=$(echo $i | tr -d "G"); a=${a%.*} ; if [ $a -ge 25 -a $ix = 0 -a ${b[idx]} != $os ] ; then firstDisk=${b[idx]} ; custom_param_disk=$firstDisk ; partition=1 ; ix=$((ix+3)) ; elif [ $a -ge 25 -a $ix = 3 -a ${b[idx]} != $os ] ; then other_drives="-drive file=${b[idx]},index=$ix,media=disk,format=raw " ; fi ; fi ;
-			idx=$((idx+1));
-			done
-			if [ $partition = 0 ] ;then 
-				echo "creating disk image"
-				sudo dd if=/dev/zero of=/disk.img bs=1024k seek=$newDisk count=0
-				custom_param_disk="/disk.img"
-			fi
-		else
-			echo "creating disk image"
-			sudo dd if=/dev/zero of=/disk.img bs=1024k seek=$newDisk count=0
-			custom_param_disk="/disk.img"
-		fi
-	else
-		skipped=1
-	fi
-fi # 2nd if closed
-else # 1st if else
-if [ $availableRAM -ge 4650 ] ; then
-	read -r -p "Do you want to completely delete your current Linux O.S.? (yes/no) : " deleteLinux
-	deleteLinux=$(echo "$deleteLinux" | head -c 1)
-	if [ ! -z $deleteLinux ] && [ $deleteLinux = 'Y' -o $deleteLinux = 'y' ] ; then
-		sudo wget -qO- /tmp https://archive.org/download/vkvm.tar_201903/vkvm.tar.gz | sudo tar xvz -C /tmp
-		qemupath=/tmp/qemu-system-x86_64
-		echo "erasing primary disk data"
-		sudo dd if=/dev/zero of=$firstDisk bs=1M count=1 # blank out the disk
-		echo "mounting devices"
-		mount -t tmpfs -o size=4500m tmpfs /mnt
-		mv /mediabots/* /mnt
-		mkdir /media/sw
-		mount -t tmpfs -o size=121m tmpfs /media/sw
-		mv /sw.iso /media/sw
-		custom_param_os="/mnt/"$(ls /mnt)
-		custom_param_sw="/media/sw/sw.iso"
-		availableRAM=$(echo $availableRAMcommand | bash)
-		custom_param_disk=$firstDisk
-		custom_param_ram="-m "$(expr $availableRAM - 500 )"M"
-		format=""
-		mounted=1
-	else
-		echo "using secondary disk for installation."
-		custom_param_disk=$(fdisk -l | grep "Disk /dev/" | awk 'NR==2' | cut -f2 -d" " | cut -f1 -d":") # 2nd disk chosen
-	fi
-else
-	echo "using secondary disk for installation.."
-	custom_param_disk=$(fdisk -l | grep "Disk /dev/" | awk 'NR==2' | cut -f2 -d" " | cut -f1 -d":")
-fi
-fi # closed 1st if
-# Adding other disks only if multi partitions are not exist
-if [ $partition = 0 ] ; then
-ix=2
-if [ $custom_param_disk != "/disk.img" ] ; then
-	for i in $(fdisk -l | grep "Disk /dev/" | cut -f2 -d" " | cut -f1 -d ":") ; do
-	if [ $i != $custom_param_disk ];then 
-	#echo $i;
-	ix=$((ix+1))
-	other_drives=$other_drives"-drive file=$i,index=$ix,media=disk,format=raw "
-	if [ $ix = 3 ]; then break; fi
-	fi
-	done
-fi
-fi
-#
-# Running the KVM
-echo "[ Running the KVM ]"
-if [ $skipped = 0 ] ; then
-echo "[.] running QEMU-KVM"
-sudo $qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format -drive file=$custom_param_os,index=1,media=cdrom -drive file=$custom_param_sw,index=2,media=cdrom $other_drives -boot once=d -vnc :9 &	
-# [note- no sudo should be used after that]
-#pidqemu=$(pgrep qemu) # does not work
-pid=$(echo $! | head -1)
-disown -h $pid
-echo "disowned PID : "$pid
-echo "[ For Debugging purpose ]"
-echo -e "$qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format -drive file=$custom_param_os,index=1,media=cdrom -drive file=$custom_param_sw,index=2,media=cdrom $other_drives -boot once=d -vnc :9 & disown %1"
-if [ $mounted = 1 ]; then
-echo -e "wget -P /tmp https://archive.org/download/vkvm.tar_201903/vkvm.tar.gz && tar -C /tmp -zxvf /tmp/vkvm.tar.gz && rm /tmp/vkvm.tar.gz && $qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format $other_drives -boot c -vnc :9 & disown %1" > /details.txt # -vnc :23456 incase you dont want to access it via VNC
-else
-echo -e "$qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format $other_drives -boot c -vnc :9 & disown %1" > /details.txt
-fi
-echo -e "${YELLOW} SAVE BELOW GREEN COLORED COMMAND IN A SAFE LOCATION FOR FUTURE USAGE${NC}"
-if [ $mounted = 1 ]; then
-echo -e "${GREEN_D}wget -P /tmp https://archive.org/download/vkvm.tar_201903/vkvm.tar.gz && tar -C /tmp -zxvf /tmp/vkvm.tar.gz && /tmp/rm vkvm.tar.gz && $qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format $other_drives -boot c -vnc :9 & disown %1${NC}"
-else
-echo -e "${GREEN_D}$qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk$format $other_drives -boot c -vnc :9 & disown %1${NC}"
-fi
-echo -e "${BLUE}command also saved in /details.txt file${NC}"
-echo -e "${YELLOW}Now download 'VNC Viewer' App from here :${NC} https://www.realvnc.com/en/connect/download/viewer/\n${YELLOW}Then install it on your computer${NC}"
-echo -e "Finally open ${GREEN_D}$ip:9${NC} on your VNC viewer."
-if [ $mounted = 1 ]; then
-read -r -p "Had your Windows Server setup completed successfully? (yes/no) : " setup_initial
-setup_initial=$(echo "$setup_initial" | head -c 1)
-sleep 10
-if [ ! -z $setup_initial ] && [ $setup_initial = 'Y' -o $setup_initial = 'y' ] ; then
-echo $pid $cpus $custom_param_disk $custom_param_sw $other_drives
-echo "helper called" 
-for i in $(ps aux | grep -i "qemu" | head -2 | tr -s '[:space:]' | cut -f2 -d" ") ; do echo "killing process id : "$i ; kill -9 $i ; done
-#sleep 30
-echo "un-mounting"
-umount -l /mnt
-sleep 10
-df
-sync; echo 3 > /proc/sys/vm/drop_caches
-free -m 
-availableRAM=$(echo $availableRAMcommand | bash)
-custom_param_ram="-m "$(expr $availableRAM - 200 )"M"
-custom_param_ram2="-m "$(expr $availableRAM - 500 )"M"
-echo $custom_param_ram
-echo "[..] running QEMU-KVM again"
-$qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk -drive file=$custom_param_sw,index=1,media=cdrom $other_drives -boot c -vnc :9 &
-pid2=$(echo $! | head -1)
-disown -h $pid2
-echo "disowned PID : "$pid2
-echo "[ For Debugging purpose ]"
-echo -e "$qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk -drive file=$custom_param_sw,index=1,media=cdrom $other_drives -boot c -vnc :9 & disown %1"
-# incase you get qemu-system-x86_64: -net user,hostfwd=tcp::3389-:3389: Could not set up host forwarding rule 'tcp::3389-:3389' ,use this instead -net user,hostfwd=tcp::30889-:3389
-echo -e "${YELLOW} SAVE BELOW GREEN COLORED COMMAND IN A SAFE LOCATION FOR FUTURE USAGE${NC}"
-echo -e "${GREEN}wget -P /tmp https://archive.org/download/vkvm.tar_201903/vkvm.tar.gz && tar -C /tmp -zxvf /tmp/vkvm.tar.gz && rm /tmp/vkvm.tar.gz && $qemupath -net nic -net user,hostfwd=tcp::3389-:3389 -show-cursor $custom_param_ram2 -localtime -enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,+nx -M pc -smp cores=$cpus -vga std -machine type=pc,accel=kvm -usb -device usb-tablet -k en-us -drive file=$custom_param_disk,index=0,media=disk $other_drives -boot c -vnc :9 & disown %1${NC}"
-echo -e "Now you can access your Windows server through \"VNC viewer\" or \"Remote Desktop Application\" (if your server 'Remote Desktop' is enabled)."
-echo "Job Done :)"
-fi
-else
-echo "Job Done :)"
-fi
-else
-echo "Windows OS required at least 25GB free desk space. Your Server/VPS does't have 25GB free space!"
-echo "Exiting....."
-fi
-fi
+#!/bin/sh
+
+
+sh_ver="1.0.1"
+
+
+
+
+#0升级脚本
+Update_Shell(){
+	sh_new_ver=$(wget --no-check-certificate -qO- -t1 -T3 "https://raw.githubusercontent.com/veip007/hj/master/hj.sh"|grep 'sh_ver="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1) && sh_new_type="github"
+	[[ -z ${sh_new_ver} ]] && echo -e "${Error} 无法链接到 Github !" && exit 0
+	wget -N --no-check-certificate "https://raw.githubusercontent.com/veip007/dd/master/dd-gd.sh" && chmod +x dd-gd.sh
+	echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !(注意：因为更新方式为直接覆盖当前运行的脚本，所以可能下面会提示一些报错，无视即可)" && exit 0
+}
+
+
+
+
+MAINIP=$(ip route get 1 | awk '{print $NF;exit}')
+GATEWAYIP=$(ip route | grep default | awk '{print $3}')
+SUBNET=$(ip -o -f inet addr show | awk '/scope global/{sub(/[^.]+\//,"0/",$4);print $4}' | head -1 | awk -F '/' '{print $2}')
+
+value=$(( 0xffffffff ^ ((1 << (32 - $SUBNET)) - 1) ))
+NETMASK="$(( (value >> 24) & 0xff )).$(( (value >> 16) & 0xff )).$(( (value >> 8) & 0xff )).$(( value & 0xff ))"
+
+wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/veip007/dd/master/InstallNET.sh' && chmod a+x InstallNET.sh && wget -N --no-check-certificate https://github.com/veip007/Network-Reinstall-System-Modify/raw/master/Network-Reinstall-System-Modify.sh && chmod a+x Network-Reinstall-System-Modify.sh
+
+clear
+echo "                                                              "
+echo "##############################################################"
+echo "#                                                            #"
+echo "#  Auto DD                                                   #"
+echo "#                                                            #"
+echo "#  Last Modified: 2021-01-25                                 #"
+echo "#  Linux默认密码：MoeClub.org  or  cxthhhhh.com  or  nat.ee  #"
+echo "#  Supported by MoeClub                                      #"
+echo "#                                                            #"
+echo "##############################################################"
+echo "                                                              "
+echo "IP: $MAINIP"
+echo "网关: $GATEWAYIP"
+echo "网络掩码: $NETMASK"
+echo ""
+echo "请选择您需要的镜像包:"
+echo "  0) 升级本脚本"
+echo "  1) CentOS 7 (DD) 用户名：root 密码：Pwd@CentOS"
+echo "  2) CentOS 6 (阿里云镜像) 用户名：root 密码：MoeClub.org"
+echo "  3) CentOS 6 用户名：root 密码：MoeClub.org"
+echo "  4) Debian 7 x32 用户名：root 密码：MoeClub.org"
+echo "  5) Debian 8 x64 用户名：root 密码：MoeClub.org"
+echo "  6) Debian 9 x64 用户名：root 密码：MoeClub.org"
+echo "  7) Debian 10 x64 用户名：root 密码：cxthhhhh.com"
+echo "  8) Ubuntu 14.04x64 用户名：root 密码：MoeClub.org"
+echo "  9) Ubuntu 16.04x64 用户名：root 密码：MoeClub.org"
+echo "  10) Ubuntu 18.04x64 用户名：root 密码：MoeClub.org"
+echo "  11) 萌咖Win7x64 用户名:Administrator  密码：Vicer"
+echo "  12) Win2019 By:MeowLove  密码：cxthhhhh.com"
+echo "  13) Win2016 By:MeowLove  密码：cxthhhhh.com"
+echo "  14) Win2012 R2 By:MeowLove  密码：cxthhhhh.com"
+echo "  15) Win2008 R2 By:MeowLove  密码：cxthhhhh.com"
+echo "  16) Windows 7 Vienna By:MeowLove  密码：cxthhhhh.com"
+echo "  17) Windows 2003 Vienna By:MeowLove  密码：cxthhhhh.com"
+echo "  18) Win7x32 By:老司机  用户名:Administrator  密码：Windows7x86-Chinese"
+echo "  19) Win-2003x32 By:老司机  用户名:Administrator  密码：WinSrv2003x86-Chinese"
+echo "  20) Win2008x64 By:老司机  用户名:Administrator  密码：WinSrv2008x64-Chinese"
+echo "  21) Win2012R2x64 By:老司机  用户名:Administrator  密码：WinSrv2012r2"
+echo "  22) CentOS 8 用户名：root 密码：cxthhhhh.com 推荐512M以上使用"
+echo "  23) Win7x64 By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  24) Win7x64 Uefi启动的VPS专用(如:甲骨文)By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  25) Win8.1x64 By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  26) Win8.1x64 Uefi启动的VPS专用(如:甲骨文)By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  27) 2008r2x64 By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  28) 2008r2x64 Uefi启动的VPS专用(如:甲骨文)By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  29) Win8.1x64 By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  30) Win8.1x64 Uefi启动的VPS专用(如:甲骨文)By:net.nn  用户名:Administrator  密码：nat.ee"
+echo "  自定义安装请使用：bash InstallNET.sh -dd '您的直连'"
+echo ""
+echo -n "请输入编号: "
+read N
+case $N in
+  0) wget -N --no-check-certificate "https://raw.githubusercontent.com/veip007/dd/master/dd-gd.sh" && chmod +x dd-gd.sh ;;
+  1) echo "Password: Pwd@CentOS" ; read -s -n1 -p "Press any key to continue..." ; bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://api.moetools.net/get/centos-7-image' ;;
+  2) bash InstallNET.sh -c 6.9 -v 64 -a --mirror 'http://mirrors.aliyun.com/centos-vault' --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $SUBNET ;;
+  3) bash InstallNET.sh -c 6.9 -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  4) bash InstallNET.sh -d 7 -v 32 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  5) bash InstallNET.sh -d 8 -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  6) bash InstallNET.sh -d 9 -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  7) bash Network-Reinstall-System-Modify.sh -Debian_10 ;;
+  8) bash InstallNET.sh -u trusty -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  9) bash InstallNET.sh -u xenial -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  10) bash InstallNET.sh -u bionic -v 64 -a --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK ;;
+  11) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1qhE4hHkCAgAiRby8WHngNduHHhqrUeMQ';;
+  12) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1IXdK-ruDrNmorxZRoJaep1Fo9p4aPi0s' ;;
+  13) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1JnbvgbvF4hzT1msk1RJ-rjrzqqzTwI1I' ;;
+  14) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1vz2Y9kPlbRYdP8blD0oGs5MY7EfYVgFR' ;;
+  15) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1dvNvV9OLm-x6p9sUbnRrKTLDuaiVj_Kg' ;;
+  16) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1O3jXs9KagrCb1SbM-DVZMAZ7gw9r3Vtp' ;;
+  17) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1PLG3EdCziMMTIWz1vnUupMPmje2pQX43' ;;
+  18) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=16Xh4iq6guHWT92MAr-NCOzStZqMTdnmU' ;;
+  19) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://drive.google.com/open?id=1rzkH24tCtwPvcT3HquoF9tZgcj022voG' ;;
+  20) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1wtUWaag5pVwmN-QUfTSJ6xbNWulLbLy-' ;;
+  21) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd 'https://www.lefu.men/gdzl/?id=1GUdLXMwBx4uM8-iBU6ClcD5HRmkURuEl' ;;
+  22) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1gGUD4lNp6GapR_-78LlmleDRW55Ao0r9" ;;
+  23) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1fGsryTy6xZi5EC9GlOpvqTK-Uty0_gFo" ;;  
+  24) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1LxzyhswxkpI_BqUolnI0HyawNvPQJHAO" ;; 
+  25) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1SKUFoUujxh3sTtLIWWcBW8riibd1q5ka" ;; 
+  26) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1GUz7Suysv0S7qRuyB9vQ_IGkTbFckFcE" ;; 
+  27) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1eA35gszGgUXI6P7dR5g5sqsIPnMJwUuN" ;; 
+  28) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1a8gEiZTEG5aeTrTflP9icAZF-HJhYU1N" ;; 
+  29) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.lefu.men/gdzl/?id=1eboWyVSkt1Hcnsl2dqgA-8p40Qbk2QvG" ;; 
+  30) bash InstallNET.sh --ip-addr $MAINIP --ip-gate $GATEWAYIP --ip-mask $NETMASK -dd "https://www.dropbox.com/scl/fi/e9b50eetnku99eec5m4nz/windows2022.gz?rlkey=upm0cm830j9aplkad7ngbmqpm&st=50kh8h0v&dl=0" ;; 
+  *) echo "Wrong input!" ;;
+esac 
