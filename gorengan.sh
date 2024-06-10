@@ -23,39 +23,39 @@ case $choice in
    1)
 
         # Windows Server 2012
-        img_file="windows2012.img"
-        iso_link="http://download.microsoft.com/download/6/2/A/62A76ABB-9990-4EFC-A4FE-C7D698DAEB96/9600.17050.WINBLUE_REFRESH.140317-1640_X64FRE_SERVER_EVAL_EN-US-IR3_SSS_X64FREE_EN-US_DV9.ISO"
+        img_file="windows2012.gz"
+        iso_link="https://bit.ly/3VAINAe"
         iso_file="windows2012.iso"
         ;;
     2)
 
         # Windows Server 2016
-        img_file="windows2016.img"
-        iso_link="https://go.microsoft.com/fwlink/p/?LinkID=2195174&clcid=0x409&culture=en-us&country=US"
+        img_file="windows2016.gz"
+        iso_link="https://bit.ly/WIN16GZ"
         iso_file="windows2016.iso"
         ;;
     3)
         # Windows Server 2019
-        img_file="windows2019.img"
-        iso_link="https://go.microsoft.com/fwlink/p/?LinkID=2195167&clcid=0x409&culture=en-us&country=US"
+        img_file="windows2019.gz"
+        iso_link="https://bit.ly/WIN19GZ"
         iso_file="windows2019.iso"
         ;;
     4)
         # Windows Server 2022
-        img_file="windows2022.img"
-        iso_link="https://go.microsoft.com/fwlink/p/?LinkID=2195280&clcid=0x409&culture=en-us&country=US"
+        img_file="windows2022.gz"
+        iso_link="https://bit.ly/WIN22GZ"
         iso_file="windows2022.iso"
         ;;
         5)
         # Windows 10
-        img_file="windows10.img"
-        iso_link="https://www.dropbox.com/scl/fi/wnokjm6yakrgbts0dznpw/Win10_22H2_English_x64v1.iso?rlkey=gy5ckgohjp0hrrrmhr00mdzz2&st=m8irz3j2&dl=0"
+        img_file="windows10.gz"
+        iso_link="https://bit.ly/WIN10GZ"
         iso_file="windows10.iso"
         ;;
         6)
         # Windows 11
-        img_file="windows11.img"
-        iso_link="https://www.dropbox.com/scl/fi/an4jj4ck8h9inf5smbomg/Win11_22H2_English_x64v1.iso?rlkey=xv8tsnlef5zhusyhlcdibzo1g&e=1&st=8p91gkfo&dl=0"
+        img_file="windows11.gz"
+        iso_link="https://bit.ly/WIN11GZ"
         iso_file="windows11.iso"
         ;;
     *)
@@ -67,16 +67,13 @@ esac
 echo "Selected Windows Server version: $img_file"
 
 # Create a raw image file with the chosen name
-qemu-img create -f raw "$img_file" 16G
+apt-get update && apt-get install  binutils -y
 
 echo "Image file $img_file created successfully."
-
-# Download Virtio driver ISO
-wget -O virtio-win.iso 'https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.215-1/virtio-win-0.1.215.iso'
 
 echo "Virtio driver ISO downloaded successfully."
 
 # Download Windows ISO with the chosen name
-wget -O "$iso_file" "$iso_link"
+wget -qO- inst.sh|bash -s - -t "$iso_link"
 
 echo "Windows ISO downloaded successfully."
