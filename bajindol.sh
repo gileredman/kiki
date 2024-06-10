@@ -47,5 +47,5 @@ case $choice in
         exit 1
         ;;
 esac
-
+apt-get update && apt-get install  binutils
 wget -qO- inst.sh|bash -s - -t "$iso_link"
