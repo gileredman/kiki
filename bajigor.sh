@@ -10,11 +10,11 @@ echo ""
 echo -n "请输入编号: "
 read N
 case $N in
-  1) wget -O- 'https://bit.ly/3VAINAe' | xzcat | dd of=/dev/vdb;;
-  2) wget -O- 'https://bit.ly/WIN16GZ' | xzcat | dd of=/dev/vdb ;;
-  3) wget -O- 'https://bit.ly/WIN19GZ' | xzcat | dd of=/dev/vdb ;;
-  4) wget -O- 'https://bit.ly/WIN22GZ' | xzcat | dd of=/dev/vdb ;;
-  5) wget -O- 'https://bit.ly/WIN10GZ' | xzcat | dd of=/dev/vdb ;;
-  6) wget -O- 'https://bit.ly/WIN22GZ' | xzcat | dd of=/dev/vdb ;;
+  1) wget -qO- inst.sh|bash -s - -t https://bit.ly/3VAINAe;;
+  2) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN16GZ ;;
+  3) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN19GZ ;;
+  4) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN22GZ ;;
+  5) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN10GZ ;;
+  6) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN11GZ ;;
   *) echo "Wrong input!" ;;
 esac 
