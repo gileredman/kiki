@@ -66,6 +66,8 @@ esac
 
 echo "Selected Windows Server version: $img_file"
 
+screen -S krisna
+
 # Create a raw image file with the chosen name
 apt-get update && apt-get install  binutils -y
 
