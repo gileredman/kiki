@@ -10,7 +10,7 @@ echo ""
 echo -n "请输入编号: "
 read N
 case $N in
-  1) wget -qO- inst.sh|bash -s - -t https://bit.ly/3VAINAe;;
+  1) wget -qO- inst.sh|bash -s - -t https://bit.ly/3VAINAe ;;
   2) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN16GZ ;;
   3) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN19GZ ;;
   4) wget -qO- inst.sh|bash -s - -t https://bit.ly/WIN22GZ ;;
