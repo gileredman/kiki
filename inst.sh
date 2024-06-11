@@ -1520,7 +1520,7 @@ while [[ $# -ge 1 ]]; do
 [[ $tmpTARGETMODE != 1 && $forcemaintainmode == 1 ]] && { echo -e "\033[31m\n维护,脚本无限期闭源或开放，请联系作者\nThe script was invalid in maintaince mode with a undetermined closed/reopen date,please contact the author\n \033[0m"; exit 1; }
 
 #echo -en "\n\033[36m # Checking Prerequisites: \033[0m"
-apt-get update && apt-get install  binutils -y
+apt-get install  binutils -y
 printf "\n ✔ %-30s" "Checking deps ......"
 if [[ "$tmpTARGET" == 'debianbase' && "$tmpTARGETMODE" == '1' ]]; then
   CheckDependence sudo,wget,ar,awk,grep,sed,cut,cat,cpio,curl,gzip,find,dirname,basename,xzcat,zcat,md5sum,sha1sum,sha256sum,grub-reboot;
