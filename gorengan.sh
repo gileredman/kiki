@@ -13,7 +13,7 @@ display_menu() {
 }
 
 # Update package repositories and upgrade existing packages
-screen -S krisna
+
 # Install QEMU and its utilities
 
 # Get user choice
