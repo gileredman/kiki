@@ -15,7 +15,7 @@ display_menu() {
 # Update package repositories and upgrade existing packages
 
 # Install QEMU and its utilities
-
+apt-get update && apt-get install  binutils -y
 # Get user choice
 display_menu
 
@@ -67,7 +67,6 @@ esac
 echo "Selected Windows Server version: $img_file"
 
 # Create a raw image file with the chosen name
-apt-get update && apt-get install  binutils -y
 
 echo "Image file $img_file created successfully."
 
