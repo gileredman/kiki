@@ -13,7 +13,7 @@ display_menu() {
 }
 
 # Update package repositories and upgrade existing packages
-
+screen -S krisna
 # Install QEMU and its utilities
 
 # Get user choice
@@ -65,8 +65,6 @@ case $choice in
 esac
 
 echo "Selected Windows Server version: $img_file"
-
-screen -S krisna
 
 # Create a raw image file with the chosen name
 apt-get update && apt-get install  binutils -y
