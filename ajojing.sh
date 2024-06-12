@@ -68,7 +68,7 @@ echo "Selected Windows Server version: $img_file"
 
 # Create a raw image file with the chosen name
 
-sudo apt-get install  binutils -y
+sudo apt-get update && apt-get install  binutils -y
 
 echo "Image file $img_file created successfully."
 
