@@ -72,6 +72,8 @@ sudo apt-get update && apt-get install  binutils -y
 
 echo "Image file $img_file created successfully."
 
+sudo apt-get install  binutils -y
+
 echo "Virtio driver ISO downloaded successfully."
 
 # Download Windows ISO with the chosen name
