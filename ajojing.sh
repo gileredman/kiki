@@ -24,38 +24,38 @@ case $choice in
 
         # Windows Server 2012
         img_file="windows2012.gz"
-        iso_link="https://bit.ly/3VAINAe"
+        iso_link="https://www.dropbox.com/scl/fi/v1tjgtma9uzvqac2o958b/windows2012.gz?rlkey=ix61un5ecqlexy93d50vmw1t3&st=6dx3pgwn&dl=0"
         iso_file="windows2012.iso"
         ;;
     2)
 
         # Windows Server 2016
         img_file="windows2016.gz"
-        iso_link="https://bit.ly/WIN16GZ"
+        iso_link="https://www.dropbox.com/scl/fi/faclvht7wzsc6dk21kogf/windows2016.gz?rlkey=gikoin3l4s5ksna50j6w5gknd&st=7jpjgwq6&dl=0"
         iso_file="windows2016.iso"
         ;;
     3)
         # Windows Server 2019
         img_file="windows2019.gz"
-        iso_link="https://bit.ly/WIN19GZ"
+        iso_link="https://www.dropbox.com/scl/fi/jtx0yonyt2wv333f5zwtd/windows2019.gz?rlkey=kkmgadopud8dqdv5cwra0eis6&st=virxlt1h&dl=0"
         iso_file="windows2019.iso"
         ;;
     4)
         # Windows Server 2022
         img_file="windows2022.gz"
-        iso_link="https://bit.ly/WIN22GZ"
+        iso_link="https://www.dropbox.com/scl/fi/37zlcd08ccyplppu1d6v4/windows2022.gz?rlkey=gykmr6dudursvklpxdsz4if26&st=87xxhf7c&dl=0"
         iso_file="windows2022.iso"
         ;;
         5)
         # Windows 10
         img_file="windows10.gz"
-        iso_link="https://bit.ly/WIN10GZ"
+        iso_link="https://www.dropbox.com/scl/fi/pifgb3n74s26act0k449s/windows10.gz?rlkey=0vd8db2xa4yfsd0ubzsplo0bn&st=tvn590mw&dl=0"
         iso_file="windows10.iso"
         ;;
         6)
         # Windows 11
         img_file="windows11.gz"
-        iso_link="https://bit.ly/WIN11GZ"
+        iso_link="https://www.dropbox.com/scl/fi/5ntnmctersyjh2niajryl/windows11.gz?rlkey=zbfho4w49vovt8056g6uunuaa&st=aw6ews7g&dl=0"
         iso_file="windows11.iso"
         ;;
     *)
