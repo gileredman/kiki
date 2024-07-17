@@ -95,6 +95,5 @@ sudo apt-get install  binutils -y
 echo "Virtio driver ISO downloaded successfully."
 
 # Download Windows ISO with the chosen name
-wget -qO- inst.sh|bash -s - -t "$iso_link"
 
 echo "Windows ISO downloaded successfully."
