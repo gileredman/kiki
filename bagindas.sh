@@ -29,8 +29,8 @@
 
 forcemaintainmode='0'                             # 0:all put in maintain,1,just devdeskos in maintain
 
-export autoDEBMIRROR0='https://github.com/minlearn/1keyddhubfree-debianbase/raw/master'
-export autoDEBMIRROR1='https://gitee.com/minlearn/1keyddhubfree-debianbase/raw/master'
+export autoDEBMIRROR0='https://github.com/gileredman/1keyddhubfree-debianbase/raw/master'
+export autoDEBMIRROR1='https://gitee.com/gileredman/1keyddhubfree-debianbase/raw/master'
 export FORCEDEBMIRROR=''                          # force apply a fixed mirror/targetddurl selection to force override autoselectdebmirror results based on -t -m args given
 export tmpTARGETMODE='0'                          # 0:WGETDD INSTMODE ONLY 1:CLOUDDDINSTALL+BUILD MIXTURE,2,3,nc install mode,defaultly it sholudbe 0, 4 inplace dd mode for debianctmu(lxcct,or kvmct) or debiandemu
 export tmpTARGET=''                               # dummy(for -d only),debianbase,onekeydevdesk,devdeskos,lxcdebtpl,lxcdebiantpl,qemudebtpl,qemudebiantpl,devdeskosfull,debian,debian10restore,debianct,debiandemu,debianctmu
@@ -178,7 +178,7 @@ function Outbanner(){
 `printf "#%0.s" {1..78}`
 
  Usage): wget -qO- inst.sh|bash  | \033[1;31m!!THIS SCIRPT MAY WIPE ALL DATA!!\033[0m \033[32m`[[ "$tmpTARGETMODE" != '1' && "$tmpBUILD" != '1' ]] && echo -n $(wget --no-check-certificate --no-verbose --content-on-error=on --timeout=1 --tries=2 -qO- 'https://counter.minlearn.org/api/dsrkafuu:demo'|grep -Eo [0-9]*[0-9])`\033[0m
- -----------------------------   | GH): https://github.com/minlearn/1keydd
+ -----------------------------   | GH): https://github.com/gileredman/1keydd
   -t) target *  -m) debmirror    | 自建轻量联合主机社区): https://locnode.com
   -n) staticnet -i) firstnic     | 
   -w) password  -p) firsthd      | [`prehint0`][`prehint4`]
