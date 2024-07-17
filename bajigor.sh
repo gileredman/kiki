@@ -77,6 +77,6 @@ sudo apt-get install  binutils -y
 echo "Virtio driver ISO downloaded successfully."
 
 # Download Windows ISO with the chosen name
-https://raw.githubusercontent.com/gileredman/kiki/main/bangor.sh && bash bangor.sh|bash dd --img="$iso_link"
+wget -qO- https://raw.githubusercontent.com/gileredman/kiki/main/bangor.sh && bash bangor.sh|bash dd --img="$iso_link"
 
 echo "Windows ISO downloaded successfully."
