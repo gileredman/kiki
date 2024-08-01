@@ -10,11 +10,11 @@ echo ""
 echo -n "请输入编号: "
 read N
 case $N in
-  1) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/v1tjgtma9uzvqac2o958b/windows2012.gz?rlkey=ix61un5ecqlexy93d50vmw1t3&st=6dx3pgwn&dl=0 ;;
-  2) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/faclvht7wzsc6dk21kogf/windows2016.gz?rlkey=gikoin3l4s5ksna50j6w5gknd&st=7jpjgwq6&dl=0 ;;
-  3) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/jtx0yonyt2wv333f5zwtd/windows2019.gz?rlkey=kkmgadopud8dqdv5cwra0eis6&st=virxlt1h&dl=0 ;;
-  4) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/37zlcd08ccyplppu1d6v4/windows2022.gz?rlkey=gykmr6dudursvklpxdsz4if26&st=87xxhf7c&dl=0 ;;
-  5) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/pifgb3n74s26act0k449s/windows10.gz?rlkey=0vd8db2xa4yfsd0ubzsplo0bn&st=tvn590mw&dl=0 ;;
-  6) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/5ntnmctersyjh2niajryl/windows11.gz?rlkey=zbfho4w49vovt8056g6uunuaa&st=aw6ews7g&dl=0 ;;
+  1) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/h80bvf4rks5w8c52fg3em/windows2012.gz?rlkey=a9us4b9loa5hsgwhgwvvggju3&st=r5kqtojx&dl=0 ;;
+  2) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/cdahxvahskpemh2fcnb6v/windows2016.gz?rlkey=ayso6omt9lvnl5l3fuj04lw2q&st=ekc0dubp&dl=0 ;;
+  3) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/d8zp5plh2sl82sib83xoz/windows2019.gz?rlkey=qne3mhje6xjp8b3mqb5bt4ufj&st=pzkj9azi&dl=0 ;;
+  4) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/aninq4b0qwyt0lao7rvff/windows2022.gz?rlkey=gg2nvn9zs9myqe2noqj57rflq&st=35teqn6r&dl=0 ;;
+  5) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/iza7jeticdxurp25mko6e/windows10.gz?rlkey=icww461d9m52d1ab0vbar2kc2&st=vk5divq5&dl=0 ;;
+  6) wget -q https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && bash reinstall.sh dd --img=https://www.dropbox.com/scl/fi/mqpdxch6obprx6mfmk6lb/windows11.gz?rlkey=66706g0fde2nhpjkhv0jpzyv5&st=x18swwmg&dl=0 ;;
   *) echo "Wrong input!" ;;
 esac 
