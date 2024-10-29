@@ -24,7 +24,7 @@ case $choice in
 
         # Windows Server 2012
         img_file="windows2012.gz"
-        iso_link="https://www.dropbox.com/scl/fi/tbgf562h6qv3jpmcqml9a/windows2012.gz?rlkey=5sh3ioe0h7vca798qty0161qq&st=bzvq7rab&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/cs8qoxidpb3h891t9qd6v/windows2012.gz?rlkey=pwt7fgebmojg8fd38rqkcb1w0&st=fimbs4gu&dl=0"
         iso_file="windows2012.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
@@ -34,7 +34,7 @@ case $choice in
 
         # Windows Server 2016
         img_file="windows2016.gz"
-        iso_link="https://www.dropbox.com/scl/fi/f040u17vfncyptiipvkfb/windows2016.gz?rlkey=2dc4fwxc4islztzgdu9wyks4h&st=9z162ve8&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/4cp9nwtrj3j34vzu006om/windows2016.gz?rlkey=36grzvo5sni7hgq4pscovoa13&st=pn0lpk0g&dl=0"
         iso_file="windows2016.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
@@ -43,7 +43,7 @@ case $choice in
     3)
         # Windows Server 2019
         img_file="windows2019.gz"
-        iso_link="https://www.dropbox.com/scl/fi/oss0u82tsbpqb6qfxois7/windows2019.gz?rlkey=29nmok39nnk22hwoc6fky73jk&st=1ks95x2m&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/ucbr33f8h1ei4ss2rhpjn/windows2019.gz?rlkey=4k5ggafpeqpr9mltr5gbqxrxx&st=liubd5iu&dl=0"
         iso_file="windows2019.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
@@ -52,7 +52,7 @@ case $choice in
     4)
         # Windows Server 2022
         img_file="windows2022.gz"
-        iso_link="https://www.dropbox.com/scl/fi/37p5qr77npelmkdt6nbus/windows2022.gz?rlkey=gesrskvehjp79fjexoelewabw&st=o0n4pi83&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/9lk759ney5jh6k567s6bp/windows2022.gz?rlkey=7fqdop5jj0ou62f7rywi3wzhc&st=ibnhv2bz&dl=0"
         iso_file="windows2022.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
@@ -61,7 +61,7 @@ case $choice in
         5)
         # Windows 10
         img_file="windows10.gz"
-        iso_link="https://www.dropbox.com/scl/fi/hpqafyytxtnrg8bmodu5u/windows10.gz?rlkey=utixvpfdtn3oq9pqd3n1oj9rp&st=v2tppy2f&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/p7lukz3zz4djb55a30ryc/windows10.gz?rlkey=939c8rpy1jo4q2y3w7s4cn323&st=nqr05kt8&dl=0"
         iso_file="windows10.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
@@ -70,7 +70,7 @@ case $choice in
         6)
         # Windows 11
         img_file="windows11.gz"
-        iso_link="https://www.dropbox.com/scl/fi/ucx923mdvoy4uhoyc620x/windows11.gz?rlkey=wm6vq5y9xu42cz1qwfs5fn2ts&st=zscqpb6n&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/fad689tj2cc9zvchqhynw/windows11.gz?rlkey=bl5jyt6h6mwsv0sursvghth9o&st=njl24qsr&dl=0"
         iso_file="windows11.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
