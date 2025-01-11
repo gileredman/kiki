@@ -70,7 +70,7 @@ case $choice in
         6)
         # Windows 11
         img_file="windows11.gz"
-        iso_link="https://www.dropbox.com/scl/fi/1xzpkjaec0ud1pseagpji/windows11.gz?rlkey=bk4cmcybbxhrwxko0ezyx5va8&st=qtivzmjh&dl=0"
+        iso_link="https://dl.lamp.sh/vhd/tiny11_23h2.xz"
         iso_file="windows11.iso"
         bash reinstall.sh dd --img="$iso_link"
         reboot
