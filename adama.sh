@@ -1,87 +1,81 @@
 #!/bin/bash
-set -e
-
+set -o pipefail
 ISO="/root/Windows_Server_2022_EN-US.ISO"
 RAW="/root/windows.raw"
 DISK="/dev/vda"
 PASSWORD="Admin@12345"
 
-echo "[+] Installing required packages..."
+echo "[*] ensure deps"
 apt update -y
-apt install -y qemu-utils wimtools parted kpartx gdisk curl wget xz-utils screen
+apt install -y qemu-utils wimtools wimlib-imagex parted kpartx gdisk ntfs-3g curl wget dosfstools
 
-echo "[+] Creating RAW disk image (20GB)..."
-qemu-img create -f raw $RAW 20G
+# symlink wimapply if missing
+if ! command -v wimapply >/dev/null 2>&1; then
+  if command -v wimlib-imagex >/dev/null 2>&1; then
+    ln -sf "$(command -v wimlib-imagex)" /usr/bin/wimapply
+  fi
+fi
 
-echo "[+] Attaching RAW via nbd..."
+echo "[*] create raw (explicit format)"
+qemu-img create -f raw "$RAW" 20G
+
+echo "[*] load nbd and attach]"
 modprobe nbd max_part=16
-qemu-nbd -c /dev/nbd0 $RAW
+sleep 1
+qemu-nbd -d /dev/nbd0 2>/dev/null || true
+qemu-nbd -c /dev/nbd0 "$RAW"
 sleep 2
 
-echo "[+] Partitioning disk..."
-sgdisk --zap-all /dev/nbd0
-sgdisk -n 1:1MiB:+100MiB -t 1:EF00 /dev/nbd0
-sgdisk -n 2:0:+19G -t 2:0700 /dev/nbd0
+echo "[*] partition with parted (safe)"
+parted /dev/nbd0 --script mklabel gpt
+parted /dev/nbd0 --script mkpart primary fat32 1MiB 513MiB
+parted /dev/nbd0 --script set 1 esp on
+parted /dev/nbd0 --script mkpart primary ntfs 513MiB 100%
 partprobe /dev/nbd0
 sleep 2
 
-echo "[+] Formatting partitions..."
+echo "[*] format"
 mkfs.fat -F32 /dev/nbd0p1
 mkfs.ntfs -f /dev/nbd0p2
 
-mkdir -p /mnt/win
-mkdir -p /mnt/iso
-mkdir -p /mnt/virtio
-
-echo "[+] Mounting Windows ISO..."
-mount -o loop $ISO /mnt/iso || { echo "ISO gagal dimount"; exit 1; }
-
-echo "[+] Mapping NTFS partition..."
+mkdir -p /mnt/win /mnt/iso /mnt/virtio
 mount /dev/nbd0p2 /mnt/win
+mount -o loop "$ISO" /mnt/iso
 
-echo "[+] Applying Windows image (wimlib – super fast)..."
+if [ ! -f /mnt/iso/sources/install.wim ]; then
+  echo "ERROR: install.wim not found in ISO. Abort."
+  exit 1
+fi
+
+echo "[*] apply wim (fast)"
 wimapply /mnt/iso/sources/install.wim 1 /mnt/win --compact=LZX
 
-echo "[+] Copying boot files..."
-mkdir -p /mnt/win/EFI/Microsoft/Boot
-cp -r /mnt/iso/efi/microsoft/boot/* /mnt/win/EFI/Microsoft/Boot/
+echo "[*] copy virtio (optional)"
+wget -q -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso || true
+mount -o loop /root/virtio.iso /mnt/virtio || true
+cp -r /mnt/virtio/* /mnt/win/VirtIO/ 2>/dev/null || true
+umount /mnt/virtio 2>/dev/null || true
 
-echo "[+] Installing bootloader..."
-bootsect /nt60 /dev/nbd0p2
-
-echo "[+] Downloading virtio drivers..."
-wget -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
-
-echo "[+] Mounting virtio drivers..."
-mount -o loop /root/virtio.iso /mnt/virtio
-
-echo "[+] Injecting virtio drivers to Windows offline..."
-wimupdate /mnt/win /mnt/virtio
-
-echo "[+] Creating FirstBoot script..."
-cat <<EOF > /mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
+echo "[*] inject firstboot"
+mkdir -p /mnt/win/Windows/Setup/Scripts
+cat <<EOF >/mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
+@echo off
 net user Administrator "$PASSWORD"
 reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
 netsh advfirewall firewall set rule group="Remote Desktop" new enable=Yes
 EOF
 
-echo "[+] Enabling FirstBoot..."
-mkdir -p /mnt/win/Windows/Setup
-cat <<EOF > /mnt/win/Windows/Setup/SetupComplete.cmd
+cat <<EOF >/mnt/win/Windows/Setup/SetupComplete.cmd
 cmd.exe /c C:\\Windows\\Setup\\Scripts\\FirstBoot.cmd
 EOF
 
-echo "[+] Cleaning mounts..."
+echo "[*] cleanup"
 umount /mnt/iso || true
 umount /mnt/win || true
-umount /mnt/virtio || true
+qemu-nbd -d /dev/nbd0 || true
 
-echo "[+] Detaching nbd..."
-qemu-nbd -d /dev/nbd0
-
-echo "[+] Flashing Windows to real disk ($DISK)..."
-dd if=$RAW of=$DISK bs=4M status=progress
+echo "[*] flash to real disk $DISK"
+dd if="$RAW" of="$DISK" bs=4M status=progress
 sync
-
-echo "[+] Windows installed! Rebooting..."
+echo "[*] done; rebooting"
 reboot -f
