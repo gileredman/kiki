@@ -11,7 +11,7 @@ TARGET_PART="${TARGET_DISK}1"
 
 ADMIN_PASS="P@ssw0rd123"                               # GANTI password Windows
 
-RESCUE_MARKER="/ayama/rescue"
+RESCUE_MARKER="/adama/rescue"
 INSTALLER_FLAG="/tmp/run_windows_installer"
 
 ### ===========================
@@ -20,7 +20,7 @@ INSTALLER_FLAG="/tmp/run_windows_installer"
 
 if [[ ! -f "$RESCUE_MARKER" ]]; then
     echo "== MODE NORMAL, masuk rescue =="
-    bash /root/ayama.sh --rescue     # PANGGIL SCRIPT RESCUE KAMU
+    bash /root/adama.sh --rescue     # PANGGIL SCRIPT RESCUE KAMU
     touch "$INSTALLER_FLAG"
     reboot
     exit 0
