@@ -3,7 +3,7 @@
 PASSWORD="Admin@12345"
 
 # ================================
-# GET NETWORK METADATA (DigitalOcean)
+# DETECT NETWORK METADATA (DigitalOcean)
 # ================================
 META="http://169.254.169.254/metadata/v1/interfaces/public/0"
 WIN_IP=$(curl -s $META/ipv4/address)
@@ -13,10 +13,11 @@ DNS1=$(curl -s http://169.254.169.254/metadata/v1/dns/nameservers | sed -n '1p')
 DNS2=$(curl -s http://169.254.169.254/metadata/v1/dns/nameservers | sed -n '2p')
 
 # ================================
-# INSTALL TOOLS
+# INSTALL TOOLS (Ubuntu 24.04)
 # ================================
 apt-get update -y
-apt-get install -y qemu-utils wimtools wget parted kpartx unzip
+apt-get install -y qemu-utils wimtools wget parted kpartx unzip \
+    ntfs-3g p7zip-full curl gdisk
 
 # ================================
 # DOWNLOAD WINDOWS ISO
@@ -27,73 +28,68 @@ echo "[+] Downloading Windows ISO..."
 wget -O /root/win.iso "$ISO_URL"
 
 # ================================
-# DOWNLOAD VirtIO DRIVERS
+# DOWNLOAD VIRTIO DRIVERS
 # ================================
 echo "[+] Downloading VirtIO driver ISO..."
 wget -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 
 # ================================
-# PREPARE RAW DISK (16GB)
+# CREATE RAW DISK
 # ================================
-echo "[+] Preparing RAW disk..."
-qemu-img create -f raw /root/windows.raw 16G
+echo "[+] Creating RAW disk..."
+qemu-img create -f raw /root/windows.raw 20G
 
-# Attach RAW to NBD
 modprobe nbd max_part=8
 qemu-nbd -c /dev/nbd0 /root/windows.raw
 sleep 2
 
 # ================================
-# PARTITION DISK
+# PARTITION DISK (UEFI GPT)
 # ================================
-parted /dev/nbd0 mklabel gpt
-parted /dev/nbd0 mkpart primary ntfs 1MiB 100%
+sgdisk -Z /dev/nbd0
+sgdisk -n 1:1MiB:+512MiB -t 1:ef00 /dev/nbd0
+sgdisk -n 2:513MiB:100% -t 2:0700 /dev/nbd0
 
-mkfs.ntfs -f /dev/nbd0p1
+mkfs.fat -F32 /dev/nbd0p1
+mkfs.ntfs -f /dev/nbd0p2
 
-# Mount partition
 mkdir -p /mnt/win
-mount /dev/nbd0p1 /mnt/win
+mount /dev/nbd0p2 /mnt/win
 
 # ================================
-# APPLY WINDOWS IMAGE VIA WIMLIB (SUPER FAST)
+# APPLY WINDOWS INSTALL.WIM (SUPER FAST)
 # ================================
-echo "[+] Extracting install.wim from ISO..."
 mkdir /mnt/iso
 mount -o loop /root/win.iso /mnt/iso
 
-wimfile="/mnt/iso/sources/install.wim"
+WIM="/mnt/iso/sources/install.wim"
 
-echo "[+] Applying Windows image using wimlib (FAST)..."
-wimapply "$wimfile" 1 /mnt/win
+echo "[+] Applying Windows image..."
+wimapply "$WIM" 1 /mnt/win
 
 umount /mnt/iso
 
 # ================================
-# ADD VirtIO DRIVERS (STORAGE + NET)
+# COPY VIRTIO DRIVERS
 # ================================
-echo "[+] Mounting VirtIO driver ISO..."
 mkdir /mnt/virtio
 mount -o loop /root/virtio.iso /mnt/virtio
 
 mkdir -p /mnt/win/VirtIO
-
 cp -r /mnt/virtio/* /mnt/win/VirtIO/
 
 umount /mnt/virtio
 
 # ================================
-# SETUP AUTOMATION (FirstBoot)
+# FIRSTBOOT SETUP
 # ================================
-echo "[+] Injecting FirstBoot automation..."
 mkdir -p /mnt/win/Windows/Setup/Scripts
 
 cat <<EOF >/mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
 @echo off
-
 net user Administrator "$PASSWORD"
 
-:: Fix NIC naming
+:: Rename NIC
 for /f "tokens=*" %%i in ('netsh interface show interface ^| findstr /i "Enabled"') do (
   for /f "tokens=1,2,3*" %%a in ("%%i") do (
     netsh interface set interface name="%%d" newname="Ethernet"
@@ -112,27 +108,25 @@ netsh interface ip add dns "Ethernet" $DNS2 index=2
 :: Disable IPv6
 reg add "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters" /v DisabledComponents /t REG_DWORD /d 255 /f
 
-:: Expand C drive
-powershell -command "Start-Sleep -Seconds 10; \
-\$s = (Get-PartitionSupportedSize -DriveLetter C); \
-Resize-Partition -DriveLetter C -Size \$s.SizeMax"
+:: Expand C:
+powershell -command "Start-Sleep -Seconds 8; \
+\$size = (Get-PartitionSupportedSize -DriveLetter C); \
+Resize-Partition -DriveLetter C -Size \$size.SizeMax"
 EOF
 
-# Auto-run FirstBoot
 cat <<EOF >/mnt/win/Windows/Setup/SetupComplete.cmd
 cmd.exe /c C:\\Windows\\Setup\\Scripts\\FirstBoot.cmd
 EOF
 
-# Cleanup
+# ================================
+# CLEAN UP + WRITE TO REAL DISK
+# ================================
 umount /mnt/win
 qemu-nbd -d /dev/nbd0
 
-# ================================
-# WRITE RAW TO REAL DISK
-# ================================
-echo "[+] Writing Windows image to /dev/vda..."
+echo "[+] Flashing Windows to /dev/vda..."
 dd if=/root/windows.raw of=/dev/vda bs=4M status=progress
 sync
 
-echo "[+] Installation OK. Rebooting..."
+echo "[+] DONE! Rebooting..."
 reboot -f
