@@ -1,131 +1,87 @@
 #!/bin/bash
+set -e
 
+ISO="/root/Windows_Server_2022_EN-US.ISO"
+RAW="/root/windows.raw"
+DISK="/dev/vda"
 PASSWORD="Admin@12345"
 
-# ============================
-# GET DIGITALOCEAN NETWORK
-# ============================
-META="http://169.254.169.254/metadata/v1/interfaces/public/0"
-WIN_IP=$(curl -s $META/ipv4/address)
-WIN_NETMASK=$(curl -s $META/ipv4/netmask)
-WIN_GATEWAY=$(curl -s $META/ipv4/gateway)
-DNS1=$(curl -s http://169.254.169.254/metadata/v1/dns/nameservers | sed -n '1p')
-DNS2=$(curl -s http://169.254.169.254/metadata/v1/dns/nameservers | sed -n '2p')
-
-# ============================
-# INSTALL TOOLS
-# ============================
+echo "[+] Installing required packages..."
 apt update -y
-apt install -y qemu-utils wimtools wget parted kpartx ntfs-3g p7zip-full curl
+apt install -y qemu-utils wimtools parted kpartx gdisk curl wget xz-utils screen
 
-# ============================
-# DOWNLOAD WINDOWS ISO
-# ============================
-ISO_URL="https://software-static.download.prss.microsoft.com/dbazure/Win2022/22H2/en-us/Windows_Server_2022_EN-US.ISO"
+echo "[+] Creating RAW disk image (20GB)..."
+qemu-img create -f raw $RAW 20G
 
-echo "[+] Downloading Windows ISO..."
-wget -O /root/win.iso "$ISO_URL"
-
-# ============================
-# DOWNLOAD VIRTIO DRIVERS
-# ============================
-wget -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
-
-# ============================
-# CREATE RAW IMAGE
-# ============================
-qemu-img create -f raw /root/windows.raw 20G
-
+echo "[+] Attaching RAW via nbd..."
 modprobe nbd max_part=16
-qemu-nbd -c /dev/nbd0 /root/windows.raw
+qemu-nbd -c /dev/nbd0 $RAW
 sleep 2
 
-# ============================
-# PARTITION DISK (SAFE MODE)
-# ============================
-parted /dev/nbd0 --script mklabel gpt
-parted /dev/nbd0 --script mkpart EFI fat32 1MiB 513MiB
-parted /dev/nbd0 --script set 1 esp on
-parted /dev/nbd0 --script mkpart Primary ntfs 513MiB 100%
-
+echo "[+] Partitioning disk..."
+sgdisk --zap-all /dev/nbd0
+sgdisk -n 1:1MiB:+100MiB -t 1:EF00 /dev/nbd0
+sgdisk -n 2:0:+19G -t 2:0700 /dev/nbd0
+partprobe /dev/nbd0
 sleep 2
 
+echo "[+] Formatting partitions..."
 mkfs.fat -F32 /dev/nbd0p1
 mkfs.ntfs -f /dev/nbd0p2
 
 mkdir -p /mnt/win
+mkdir -p /mnt/iso
+mkdir -p /mnt/virtio
+
+echo "[+] Mounting Windows ISO..."
+mount -o loop $ISO /mnt/iso || { echo "ISO gagal dimount"; exit 1; }
+
+echo "[+] Mapping NTFS partition..."
 mount /dev/nbd0p2 /mnt/win
 
-# ============================
-# APPLY WINDOWS WIM
-# ============================
-mkdir -p /mnt/iso
-mount -o loop /root/win.iso /mnt/iso
+echo "[+] Applying Windows image (wimlib – super fast)..."
+wimapply /mnt/iso/sources/install.wim 1 /mnt/win --compact=LZX
 
-WIM="/mnt/iso/sources/install.wim"
+echo "[+] Copying boot files..."
+mkdir -p /mnt/win/EFI/Microsoft/Boot
+cp -r /mnt/iso/efi/microsoft/boot/* /mnt/win/EFI/Microsoft/Boot/
 
-echo "[+] Applying Windows..."
-wimapply "$WIM" 1 /mnt/win
+echo "[+] Installing bootloader..."
+bootsect /nt60 /dev/nbd0p2
 
-umount /mnt/iso
+echo "[+] Downloading virtio drivers..."
+wget -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 
-# ============================
-# ADD VIRTIO DRIVERS
-# ============================
-mkdir /mnt/virtio
+echo "[+] Mounting virtio drivers..."
 mount -o loop /root/virtio.iso /mnt/virtio
 
-mkdir -p /mnt/win/VirtIO
-cp -r /mnt/virtio/* /mnt/win/VirtIO/
+echo "[+] Injecting virtio drivers to Windows offline..."
+wimupdate /mnt/win /mnt/virtio
 
-umount /mnt/virtio
-
-# ============================
-# FIRST BOOT SCRIPT
-# ============================
-mkdir -p /mnt/win/Windows/Setup/Scripts
-
-cat <<EOF >/mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
-@echo off
+echo "[+] Creating FirstBoot script..."
+cat <<EOF > /mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
 net user Administrator "$PASSWORD"
-
-:: Rename NIC
-for /f "tokens=*" %%i in ('netsh interface show interface ^| findstr /i "Enabled"') do (
-  for /f "tokens=1,2,3*" %%a in ("%%i") do (
-    netsh interface set interface name="%%d" newname="Ethernet"
-  )
-)
-
-:: Enable RDP
 reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-netsh advfirewall firewall set rule group="remote desktop" new enable=yes
-
-:: Set static IP
-netsh interface ip set address "Ethernet" static $WIN_IP $WIN_NETMASK $WIN_GATEWAY
-netsh interface ip set dns "Ethernet" static $DNS1
-netsh interface ip add dns "Ethernet" $DNS2 index=2
-
-:: Disable IPv6
-reg add "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters" /v DisabledComponents /t REG_DWORD /d 255 /f
-
-:: Expand C drive
-powershell -command "Start-Sleep -Seconds 10; \
-\$x = (Get-PartitionSupportedSize -DriveLetter C); \
-Resize-Partition -DriveLetter C -Size \$x.SizeMax"
+netsh advfirewall firewall set rule group="Remote Desktop" new enable=Yes
 EOF
 
-cat <<EOF >/mnt/win/Windows/Setup/SetupComplete.cmd
+echo "[+] Enabling FirstBoot..."
+mkdir -p /mnt/win/Windows/Setup
+cat <<EOF > /mnt/win/Windows/Setup/SetupComplete.cmd
 cmd.exe /c C:\\Windows\\Setup\\Scripts\\FirstBoot.cmd
 EOF
 
-# ============================
-# CLEANUP
-# ============================
-umount /mnt/win
+echo "[+] Cleaning mounts..."
+umount /mnt/iso || true
+umount /mnt/win || true
+umount /mnt/virtio || true
+
+echo "[+] Detaching nbd..."
 qemu-nbd -d /dev/nbd0
 
-echo "[+] Flashing to /dev/vda..."
-dd if=/root/windows.raw of=/dev/vda bs=4M status=progress
-
+echo "[+] Flashing Windows to real disk ($DISK)..."
+dd if=$RAW of=$DISK bs=4M status=progress
 sync
+
+echo "[+] Windows installed! Rebooting..."
 reboot -f
