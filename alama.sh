@@ -1,100 +1,182 @@
 #!/bin/bash
-curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
-# Function to display menu and get user choice
-display_menu() {
-    echo "Please select the Windows Server version:"
-    echo "1. Windows Server 2012"
-    echo "2. Windows Server 2016"
-    echo "3. Windows Server 2019"
-    echo "4. Windows Server 2022"
-    echo "5. Windows 10"
-    echo "6. Windows 11"
-    read -p "Enter your choice: " choice
-}
+set -euo pipefail
 
-# Update package repositories and upgrade existing packages
+### ===========================
+### KONFIGURASI
+### ===========================
 
-# Install QEMU and its utilities
+WIN_IMG_URL="https://www.dropbox.com/scl/fi/kn9utlsdxj034nzk5xzy5/windows2019.gz?rlkey=1e8is6vaefyuimp699osb6lqt&st=ge07e3np&dl=1"
+TARGET_DISK="/dev/vda"
+TARGET_PART="${TARGET_DISK}1"
 
-# Get user choice
-display_menu
+ADMIN_PASS="P@ssw0rd123"
 
-case $choice in
-   1)
+INSTALLER_FLAG="/tmp/run_windows_installer"
 
-        # Windows Server 2012
-        img_file="windows2012.gz"
-        iso_link="https://www.dropbox.com/scl/fi/v1tjgtma9uzvqac2o958b/windows2012.gz?rlkey=ix61un5ecqlexy93d50vmw1t3&st=6dx3pgwn&dl=0"
-        iso_file="windows2012.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-    2)
+### ===========================
+### DETEKSI MODE RESCUE (ALPINE)
+### ===========================
 
-        # Windows Server 2016
-        img_file="windows2016.gz"
-        iso_link="https://www.dropbox.com/scl/fi/faclvht7wzsc6dk21kogf/windows2016.gz?rlkey=gikoin3l4s5ksna50j6w5gknd&st=7jpjgwq6&dl=0"
-        iso_file="windows2016.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-    3)
-        # Windows Server 2019
-        img_file="windows2019.gz"
-        iso_link="https://www.dropbox.com/scl/fi/jtx0yonyt2wv333f5zwtd/windows2019.gz?rlkey=kkmgadopud8dqdv5cwra0eis6&st=virxlt1h&dl=0"
-        iso_file="windows2019.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-    4)
-        # Windows Server 2022
-        img_file="windows2022.gz"
-        iso_link="https://www.dropbox.com/scl/fi/37zlcd08ccyplppu1d6v4/windows2022.gz?rlkey=gykmr6dudursvklpxdsz4if26&st=87xxhf7c&dl=0"
-        iso_file="windows2022.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-        5)
-        # Windows 10
-        img_file="windows10.gz"
-        iso_link="https://www.dropbox.com/scl/fi/pifgb3n74s26act0k449s/windows10.gz?rlkey=0vd8db2xa4yfsd0ubzsplo0bn&st=tvn590mw&dl=0"
-        iso_file="windows10.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-        6)
-        # Windows 11
-        img_file="windows11.gz"
-        iso_link="https://www.dropbox.com/scl/fi/5ntnmctersyjh2niajryl/windows11.gz?rlkey=zbfho4w49vovt8056g6uunuaa&st=aw6ews7g&dl=0"
-        iso_file="windows11.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        reboot
-        exit
-        ;;
-    *)
-        echo "Invalid choice. Exiting."
+IS_RESCUE_MODE=0
+
+if grep -qi "alpine" /etc/os-release 2>/dev/null; then
+    IS_RESCUE_MODE=1
+elif [[ -f "/reinstall-initrd" ]]; then
+    IS_RESCUE_MODE=1
+fi
+
+### ===========================
+### MODE NORMAL → MASUK RESCUE
+### ===========================
+
+if [[ $IS_RESCUE_MODE -eq 0 ]]; then
+    echo "== MODE NORMAL, masuk rescue =="
+    
+    if [[ ! -f /root/ayama.sh ]]; then
+        echo "ERROR: /root/ayama.sh tidak ditemukan!"
+        echo "Pastikan file script rescue kamu ada di /root/ayama.sh"
         exit 1
-        ;;
-esac
+    fi
 
-echo "Selected Windows Server version: $img_file"
+    bash /root/ayama.sh --rescue
+    touch "$INSTALLER_FLAG"
+    reboot
+    exit 0
+fi
 
-# Create a raw image file with the chosen name
+echo "====================================="
+echo "= MODE RESCUE TERDETEKSI – Install Windows =="
+echo "====================================="
 
-sudo apt-get update && apt-get install  binutils -y
+if [[ ! -f "$INSTALLER_FLAG" ]]; then
+    echo "Tidak ada flag installer, keluar."
+    exit 0
+fi
 
-echo "Image file $img_file created successfully."
+### ===========================
+### AUTO DETEKSI IP DROPLET
+### ===========================
 
-sudo apt-get install  binutils -y
+echo "== Mendeteksi IP droplet =="
 
-echo "Virtio driver ISO downloaded successfully."
+PUBLIC_IP=$(curl -s ifconfig.me || echo "0.0.0.0")
+PRIVATE_IP=$(ip -4 route get 1.1.1.1 | awk '/src/ {print $7}')
+NETMASK="255.255.255.0"
+GATEWAY="10.0.0.1"
+DNS1="8.8.8.8"
+DNS2="1.1.1.1"
 
-# Download Windows ISO with the chosen name
-wget -qO- inst.sh|bash -s - -t "$iso_link"
+echo "Public  : $PUBLIC_IP"
+echo "Private : $PRIVATE_IP"
+echo "Gateway : $GATEWAY"
 
-echo "Windows ISO downloaded successfully."
+### ===========================
+### INSTALL DEPENDENSI
+### ===========================
+
+apk add wget curl gzip e2fsprogs-extra ntfs-3g parted chntpw || true
+apt update || true
+apt install -y wget curl ntfs-3g parted chntpw ntfsprogs gzip || true
+yum install -y wget curl gzip ntfs-3g parted chntpw ntfsprogs || true
+
+### ===========================
+### DOWNLOAD WINDOWS IMAGE
+### ===========================
+
+WIN_IMG_GZ="/tmp/windows.img.gz"
+
+echo "== Download Windows Image =="
+wget --no-check-certificate -O "$WIN_IMG_GZ" "$WIN_IMG_URL"
+
+### ===========================
+### TULIS IMAGE KE DISK
+### ===========================
+
+echo "== Menulis image Windows ke $TARGET_DISK =="
+gunzip -c "$WIN_IMG_GZ" | dd of="$TARGET_DISK" bs=32M status=progress conv=fsync
+sync
+
+### ===========================
+### RESIZE PARTISI WINDOWS
+### ===========================
+
+echo "== Resize Partisi =="
+parted "$TARGET_DISK" ---pretend-input-tty <<EOF
+unit %
+resizepart 1 100%
+Yes
+quit
+EOF
+
+ntfsresize -f "$TARGET_PART"
+
+### ===========================
+### MOUNT IMAGE
+### ===========================
+
+MNT="/mnt/windows"
+mkdir -p "$MNT"
+mount -t ntfs-3g "$TARGET_PART" "$MNT"
+
+### ===========================
+### RESET PASSWORD ADMIN
+### ===========================
+
+echo "== Reset password Administrator =="
+chntpw -u "Administrator" -N "$MNT/Windows/System32/config/SAM"
+
+mkdir -p "$MNT/Windows/Setup/Scripts"
+
+### ===========================
+### AUTO STATIC IP SCRIPT
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/AutoNetwork.ps1" <<EOF
+Write-Host "Configuring STATIC IP..."
+
+\$nic = Get-NetAdapter | Where-Object { \$_.Status -eq "Up" } | Select-Object -First 1
+If (-not \$nic) { exit }
+
+New-NetIPAddress -InterfaceIndex \$nic.ifIndex -IPAddress "$PRIVATE_IP" -PrefixLength 24 -DefaultGateway "$GATEWAY"
+Set-DnsClientServerAddress -InterfaceIndex \$nic.ifIndex -ServerAddresses "$DNS1","$DNS2"
+EOF
+
+### ===========================
+### SET ADMIN PASSWORD
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/SetAdminPassword.ps1" <<EOF
+\$sec = ConvertTo-SecureString "$ADMIN_PASS" -AsPlainText -Force
+Set-LocalUser -Name "Administrator" -Password \$sec
+EOF
+
+### ===========================
+### AUTO ENABLE RDP + PORT 7878
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/AutoRDP.ps1" <<EOF
+Write-Host "Enabling RDP..."
+
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
+netsh advfirewall firewall add rule name="Custom Port 7878" dir=in protocol=TCP localport=7878 action=allow
+
+Write-Host "RDP + Port 7878 Enabled"
+EOF
+
+### ===========================
+### SETUPCOMPLETE – RUN SEMUA
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/SetupComplete.cmd" <<EOF
+@echo off
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\SetAdminPassword.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\AutoNetwork.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\AutoRDP.ps1"
+EOF
+
+umount "$MNT"
+rm -f "$INSTALLER_FLAG"
+
+echo "== Instalasi Windows selesai, reboot ke Windows =="
+reboot
