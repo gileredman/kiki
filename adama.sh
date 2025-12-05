@@ -1,81 +1,166 @@
 #!/bin/bash
-set -o pipefail
-ISO="/root/Windows_Server_2022_EN-US.ISO"
-RAW="/root/windows.raw"
-DISK="/dev/vda"
-PASSWORD="Admin@12345"
+set -euo pipefail
 
-echo "[*] ensure deps"
-apt update -y
-apt install -y qemu-utils wimtools wimlib-imagex parted kpartx gdisk ntfs-3g curl wget dosfstools
+### ===========================
+### KONFIGURASI
+### ===========================
 
-# symlink wimapply if missing
-if ! command -v wimapply >/dev/null 2>&1; then
-  if command -v wimlib-imagex >/dev/null 2>&1; then
-    ln -sf "$(command -v wimlib-imagex)" /usr/bin/wimapply
-  fi
+WIN_IMG_URL="https://www.dropbox.com/scl/fi/kn9utlsdxj034nzk5xzy5/windows2019.gz?rlkey=1e8is6vaefyuimp699osb6lqt&st=ge07e3np&dl=0"   # GANTI
+TARGET_DISK="/dev/vda"                                 # GANTI jika sda/nvme0n1
+TARGET_PART="${TARGET_DISK}1"
+
+ADMIN_PASS="P@ssw0rd123"                               # GANTI password Windows
+
+RESCUE_MARKER="/ayama/rescue"
+INSTALLER_FLAG="/tmp/run_windows_installer"
+
+### ===========================
+### DETEKSI MODE (NORMAL → RESCUE)
+### ===========================
+
+if [[ ! -f "$RESCUE_MARKER" ]]; then
+    echo "== MODE NORMAL, masuk rescue =="
+    bash /root/ayama.sh --rescue     # PANGGIL SCRIPT RESCUE KAMU
+    touch "$INSTALLER_FLAG"
+    reboot
+    exit 0
 fi
 
-echo "[*] create raw (explicit format)"
-qemu-img create -f raw "$RAW" 20G
+echo "====================================="
+echo "= MODE RESCUE – Install Windows =="
+echo "====================================="
 
-echo "[*] load nbd and attach]"
-modprobe nbd max_part=16
-sleep 1
-qemu-nbd -d /dev/nbd0 2>/dev/null || true
-qemu-nbd -c /dev/nbd0 "$RAW"
-sleep 2
-
-echo "[*] partition with parted (safe)"
-parted /dev/nbd0 --script mklabel gpt
-parted /dev/nbd0 --script mkpart primary fat32 1MiB 513MiB
-parted /dev/nbd0 --script set 1 esp on
-parted /dev/nbd0 --script mkpart primary ntfs 513MiB 100%
-partprobe /dev/nbd0
-sleep 2
-
-echo "[*] format"
-mkfs.fat -F32 /dev/nbd0p1
-mkfs.ntfs -f /dev/nbd0p2
-
-mkdir -p /mnt/win /mnt/iso /mnt/virtio
-mount /dev/nbd0p2 /mnt/win
-mount -o loop "$ISO" /mnt/iso
-
-if [ ! -f /mnt/iso/sources/install.wim ]; then
-  echo "ERROR: install.wim not found in ISO. Abort."
-  exit 1
+if [[ ! -f "$INSTALLER_FLAG" ]]; then
+    echo "Tidak ada flag installer"
+    exit 0
 fi
 
-echo "[*] apply wim (fast)"
-wimapply /mnt/iso/sources/install.wim 1 /mnt/win --compact=LZX
+### ===========================
+### AUTO DETEKSI IP DROPLET
+### ===========================
 
-echo "[*] copy virtio (optional)"
-wget -q -O /root/virtio.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso || true
-mount -o loop /root/virtio.iso /mnt/virtio || true
-cp -r /mnt/virtio/* /mnt/win/VirtIO/ 2>/dev/null || true
-umount /mnt/virtio 2>/dev/null || true
+echo "== Mendeteksi IP droplet =="
 
-echo "[*] inject firstboot"
-mkdir -p /mnt/win/Windows/Setup/Scripts
-cat <<EOF >/mnt/win/Windows/Setup/Scripts/FirstBoot.cmd
-@echo off
-net user Administrator "$PASSWORD"
-reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-netsh advfirewall firewall set rule group="Remote Desktop" new enable=Yes
-EOF
+PUBLIC_IP=$(curl -s ifconfig.me || echo "0.0.0.0")
+PRIVATE_IP=$(ip -4 route get 1.1.1.1 | awk '/src/ {print $7}')
+NETMASK="255.255.255.0"
+GATEWAY="10.0.0.1"
+DNS1="8.8.8.8"
+DNS2="1.1.1.1"
 
-cat <<EOF >/mnt/win/Windows/Setup/SetupComplete.cmd
-cmd.exe /c C:\\Windows\\Setup\\Scripts\\FirstBoot.cmd
-EOF
+echo "== IP terdeteksi =="
+echo "Public  : $PUBLIC_IP"
+echo "Private : $PRIVATE_IP"
+echo "Gateway : $GATEWAY"
 
-echo "[*] cleanup"
-umount /mnt/iso || true
-umount /mnt/win || true
-qemu-nbd -d /dev/nbd0 || true
+### ===========================
+### INSTALL DEPENDENSI
+### ===========================
 
-echo "[*] flash to real disk $DISK"
-dd if="$RAW" of="$DISK" bs=4M status=progress
+apt update || yum update -y || true
+apt install -y wget curl gzip ntfs-3g parted chntpw ntfsprogs || true
+yum install -y wget curl gzip ntfs-3g parted chntpw ntfsprogs || true
+
+### ===========================
+### DOWNLOAD IMAGE WINDOWS
+### ===========================
+
+WIN_IMG_GZ="/tmp/windows.img.gz"
+
+echo "== Download Windows Image =="
+wget -O "$WIN_IMG_GZ" "$WIN_IMG_URL"
+
+### ===========================
+### TULIS IMAGE KE DISK
+### ===========================
+
+echo "== Menulis image Windows ke disk =="
+gunzip -c "$WIN_IMG_GZ" | dd of="$TARGET_DISK" bs=16M status=progress conv=fsync
 sync
-echo "[*] done; rebooting"
-reboot -f
+
+### ===========================
+### RESIZE PARTISI
+### ===========================
+
+echo "== Resize Partisi =="
+parted "$TARGET_DISK" ---pretend-input-tty <<EOF
+unit %
+resizepart 1 100%
+Yes
+quit
+EOF
+
+ntfsresize -f "$TARGET_PART"
+
+### ===========================
+### SET PASSWORD + AUTO IP + AUTO RDP
+### ===========================
+
+MNT="/mnt/windows"
+mkdir -p "$MNT"
+mount -t ntfs-3g "$TARGET_PART" "$MNT"
+
+echo "== Reset password Administrator =="
+chntpw -u "Administrator" -N "$MNT/Windows/System32/config/SAM"
+
+mkdir -p "$MNT/Windows/Setup/Scripts"
+
+### ===========================
+### SCRIPT: AUTO STATIC IP
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/AutoNetwork.ps1" <<EOF
+Write-Host "Configuring STATIC IP..."
+
+# Deteksi NIC
+\$nic = Get-NetAdapter | Where-Object { \$_.Status -eq "Up" } | Select-Object -First 1
+If (-not \$nic) { exit }
+
+New-NetIPAddress -InterfaceIndex \$nic.ifIndex -IPAddress "$PRIVATE_IP" -PrefixLength 24 -DefaultGateway "$GATEWAY"
+Set-DnsClientServerAddress -InterfaceIndex \$nic.ifIndex -ServerAddresses "$DNS1","$DNS2"
+
+Write-Host "Static IP applied"
+EOF
+
+### ===========================
+### SCRIPT: SET ADMIN PASSWORD
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/SetAdminPassword.ps1" <<EOF
+\$sec = ConvertTo-SecureString "$ADMIN_PASS" -AsPlainText -Force
+Set-LocalUser -Name "Administrator" -Password \$sec
+EOF
+
+### ===========================
+### SCRIPT: ENABLE RDP + FIREWALL 7878
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/AutoRDP.ps1" <<EOF
+Write-Host "Enabling RDP..."
+
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+
+netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
+
+netsh advfirewall firewall add rule name="Custom Port 7878" dir=in protocol=TCP localport=7878 action=allow
+
+Write-Host "RDP + Port 7878 Enabled"
+EOF
+
+### ===========================
+### SETUPCOMPLETE – RUN SEMUA
+### ===========================
+
+cat > "$MNT/Windows/Setup/Scripts/SetupComplete.cmd" <<EOF
+@echo off
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\SetAdminPassword.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\AutoNetwork.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\AutoRDP.ps1"
+EOF
+
+umount "$MNT"
+
+rm -f "$INSTALLER_FLAG"
+
+echo "== Instalasi Windows selesai, reboot =="
+reboot
