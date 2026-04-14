@@ -24,7 +24,7 @@ case $choice in
 
         # Windows Server 2012
         img_file="windows2012.gz"
-        iso_link="https://www.dropbox.com/scl/fi/b3wuios5rw93t6j0n0guo/windows2012.gz?rlkey=4f8xb83lyp7uymfzya9di1ypa&st=nohchjjc&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/amul9mcth9oa9drd6nel2/windows2012.gz?rlkey=9qim7tozscoerfo4mse3vaaii&st=ub6x8dvr&dl=0"
         iso_file="windows2012.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
@@ -34,7 +34,7 @@ case $choice in
 
         # Windows Server 2016
         img_file="windows2016.gz"
-        iso_link="https://www.dropbox.com/scl/fi/pcz1t38bvtb10oivi54t6/windows2016.gz?rlkey=pniznfxh2fmivdy7hfc88jsze&st=4t72z39p&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/bthog4s694bhgvfb7x2it/windows2016.gz?rlkey=1am1botdriktky4xplqoe0slc&st=ps3itplo&dl=0"
         iso_file="windows2016.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
@@ -43,7 +43,7 @@ case $choice in
     3)
         # Windows Server 2019
         img_file="windows2019.gz"
-        iso_link="https://www.dropbox.com/scl/fi/0ednv8ktz2je2lwwierp1/windows2019.gz?rlkey=pqsee965rwuzd6nbeoeejhetq&st=gh1mfa30&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/3tdaorze2kll5jlgfq0z5/windows2019.gz?rlkey=ihihavyjbp5y80hlivm9qnc1c&st=qbxvod8r&dl=0"
         iso_file="windows2019.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
@@ -52,7 +52,7 @@ case $choice in
     4)
         # Windows Server 2022
         img_file="windows2022.gz"
-        iso_link="https://www.dropbox.com/scl/fi/ed3kwatw5o7oyu01760gn/windows2022.gz?rlkey=f233q1lu1tnlvsz8sf5t67m6e&st=yw7r8gvf&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/r8c4ky07vn3jyd7otjhan/windows2022.gz?rlkey=95zki9dg2hkvpj79ikj1bxhht&st=qys3j53v&dl=0"
         iso_file="windows2022.iso"
         bash reinstall.sh dd --img="$iso_link"
        sudo reboot
@@ -61,7 +61,7 @@ case $choice in
         5)
         # Windows 10
         img_file="windows10.gz"
-        iso_link="https://www.dropbox.com/scl/fi/7t27tym2yoktdn4pw2h6j/windows10.gz?rlkey=on1upfdy9ka6od7au3us5g36c&st=wpgzr9q7&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/7d1lgarccpvm40sakjdb8/windows10.gz?rlkey=i58uau6w7jc43a9zuzuyo3ang&st=crmurc8x&dl=0"
         iso_file="windows10.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
