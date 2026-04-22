@@ -61,7 +61,7 @@ case $choice in
         5)
         # Windows 10
         img_file="windows10.gz"
-        iso_link="https://www.dropbox.com/scl/fi/qq962fx608t2hg569irbm/windows10.gz?rlkey=pl0qecl99ss1vahvky2fsttt0&st=tkysrd1b&dl=0"
+        iso_link="https://www.dropbox.com/scl/fi/7d1lgarccpvm40sakjdb8/windows10.gz?rlkey=i58uau6w7jc43a9zuzuyo3ang&st=crmurc8x&dl=0"
         iso_file="windows10.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
