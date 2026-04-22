@@ -1,5 +1,5 @@
 #!/bin/bash
-curl -O https://pastekek.me/reinstall.sh
+curl -O https://raw.githubusercontent.com/gileredman/reinstall/refs/heads/main/reinstall.sh
 # Function to display menu and get user choice
 display_menu() {
     echo "Please select the Windows Server version:"
