@@ -52,7 +52,7 @@ case $choice in
     4)
         # Windows Server 2022
         img_file="windows2022.gz"
-        iso_link="https://www.dropbox.com/scl/fi/30uutau1ncvbx4kmvfau2/windows2022.gz?rlkey=s9ul9bboaum8xym9l3wcfh2sp&st=2hk1zog3&dl=0"
+        iso_link="https://pub-15e293b64a324d55b38ac9dc63df946d.r2.dev/windows2022.gz"
         iso_file="windows2022.iso"
         bash reinstall.sh dd --img="$iso_link"
        sudo reboot
