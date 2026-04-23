@@ -24,7 +24,7 @@ case $choice in
 
         # Windows Server 2012
         img_file="windows2012.gz"
-        iso_link="https://www.dropbox.com/scl/fi/pc3l49fahber1kchcf0dp/windows2012.gz?rlkey=mb8d313om3jiabfiofkry6u9p&st=t921vshk&dl=0"
+        iso_link="https://pub-deccb8e02b364c7ba58fa8b1588dfd60.r2.dev/windows2012.gz"
         iso_file="windows2012.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
