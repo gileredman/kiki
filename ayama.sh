@@ -43,7 +43,7 @@ case $choice in
     3)
         # Windows Server 2019
         img_file="windows2019.gz"
-        iso_link="https://www.dropbox.com/scl/fi/hautlvcohpxlcy4zil067/windows2019.gz?rlkey=699x2b8xuzg2x0ifzze89hwiw&st=be82tnhn&dl=0"
+        iso_link="https://pub-d38a52f0bd6f44cd913f601c8a772f70.r2.dev/windows2019.gz"
         iso_file="windows2019.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
