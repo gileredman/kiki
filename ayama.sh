@@ -34,7 +34,7 @@ case $choice in
 
         # Windows Server 2016
         img_file="windows2016.gz"
-        iso_link="https://www.dropbox.com/scl/fi/6pk97thxksckmref3hort/windows2016.gz?rlkey=amop2zf47zilpyd05h2lew860&st=m5antdsu&dl=0"
+        iso_link="https://pub-58142c4e17894a748c8a70011af38938.r2.dev/windows2016.gz"
         iso_file="windows2016.iso"
         bash reinstall.sh dd --img="$iso_link"
         sudo reboot
