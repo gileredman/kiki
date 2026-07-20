@@ -1,99 +1,58 @@
 #!/bin/bash
-curl -O https://raw.githubusercontent.com/gileredman/reinstall/main/reinstall.sh
-# Function to display menu and get user choice
+
+# Download reinstall script
+curl -O https://raw.githubusercontent.com/gileredman/reinstall/refs/heads/main/reinstall.sh
+
+# Display menu
 display_menu() {
-    echo "Please select the Windows Server version:"
-    echo "1. Windows Server 2012"
+    echo "======================================"
+    echo "      Windows Installation Menu"
+    echo "======================================"
+    echo "1. Windows Server 2012 R2"
     echo "2. Windows Server 2016"
     echo "3. Windows Server 2019"
     echo "4. Windows Server 2022"
-    echo "5. Windows 10"
-    echo "6. Windows 11"
+    echo "5. Windows 10 Pro"
+    echo "6. Windows 11 Pro"
+    echo "======================================"
     read -p "Enter your choice: " choice
 }
 
-# Update package repositories and upgrade existing packages
-
-# Install QEMU and its utilities
-
-# Get user choice
 display_menu
 
 case $choice in
-   1)
-
-        # Windows Server 2012
-        img_file="windows2012.gz"
-        iso_link="https://www.dropbox.com/scl/fi/d74r5f4ilcedyk1zxw8t4/windows2012.xz?rlkey=v4wegc0yy4yxmjmmbvwyfg1v5&e=2&st=b8na3s6g&dl=0"
-        iso_file="windows2012.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        sudo reboot
-        exit
+    1)
+        IMAGE_NAME="Windows Server 2012 R2 SERVERSTANDARD"
+        ISO_URL="https://go.microsoft.com/fwlink/?linkid=2195443"
         ;;
     2)
-
-        # Windows Server 2016
-        img_file="windows2016.gz"
-        iso_link="https://www.dropbox.com/scl/fi/td0alhb7yvfflxxw0j114/windows2016.gz?rlkey=wynjsv2irtq48l24s4e9dmbch&st=5xpak728&dl=0"
-        iso_file="windows2016.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        sudo reboot
-        exit
+        IMAGE_NAME="Windows Server 2016 SERVERSTANDARD"
+        ISO_URL="https://go.microsoft.com/fwlink/?linkid=2195174"
         ;;
     3)
-        # Windows Server 2019
-        img_file="windows2019.gz"
-        iso_link="https://www.dropbox.com/scl/fi/kn9utlsdxj034nzk5xzy5/windows2019.gz?rlkey=1e8is6vaefyuimp699osb6lqt&st=ge07e3np&dl=0"
-        iso_file="windows2019.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        sudo reboot
-        exit
+        IMAGE_NAME="Windows Server 2019 SERVERSTANDARD"
+        ISO_URL="https://pub-88e1e3d4253140fbb900f4f41281befe.r2.dev/iso/win19.iso"
         ;;
     4)
-        # Windows Server 2022
-        img_file="windows2022.gz"
-        iso_link="https://www.dropbox.com/scl/fi/0827heo1p31rznwmn3pvy/windows2022.gz?rlkey=0nmbenr3083lqkq6rpcptym0o&st=qq66u82e&dl=0"
-        iso_file="windows2022.iso"
-        bash reinstall.sh dd --img="$iso_link"
-       sudo reboot
-        exit
+        IMAGE_NAME="Windows Server 2022 SERVERSTANDARD"
+        ISO_URL="https://go.microsoft.com/fwlink/?linkid=2195280"
         ;;
-        5)
-        # Windows 10
-        img_file="windows10.gz"
-        iso_link="https://www.dropbox.com/scl/fi/fx2i3z9ly6zhh52iq4drn/windows10.gz?rlkey=it2h5awnvuqsoykyrkmhf8hka&st=2hrn2ua8&dl=0"
-        iso_file="windows10.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        sudo reboot
-        exit
+    5)
+        IMAGE_NAME="Windows 10 Enterprise Evaluation"
+        ISO_URL="https://software-static.download.prss.microsoft.com/dbazure/988969d5-f34g-4e03-ac9d-1f9786c66750/19045.2006.220908-0225.22h2_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso"
         ;;
-        6)
-        # Windows 11
-        img_file="windows11.gz"
-        iso_link="https://dl.lamp.sh/vhd/tiny11_23h2.xz"
-        iso_file="windows11.iso"
-        bash reinstall.sh dd --img="$iso_link"
-        sudo reboot
-        exit
+    6)
+        IMAGE_NAME="Windows 11 Pro"
+        ISO_URL="https://pub-9f73f964d86e4e8cb4d66e697bfc9e45.r2.dev/win11.iso"
         ;;
     *)
-        echo "Invalid choice. Exiting."
+        echo "Invalid choice."
         exit 1
         ;;
 esac
 
-echo "Selected Windows Server version: $img_file"
+bash reinstall.sh windows \
+    --image-name "$IMAGE_NAME" \
+    --iso "$ISO_URL"
 
-# Create a raw image file with the chosen name
-
-sudo apt-get update && apt-get install  binutils -y
-
-echo "Image file $img_file created successfully."
-
-sudo apt-get install  binutils -y
-
-echo "Virtio driver ISO downloaded successfully."
-
-# Download Windows ISO with the chosen name
-
-echo "Windows ISO downloaded successfully."
+sudo reboot
