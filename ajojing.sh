@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Download reinstall script
-curl -O https://raw.githubusercontent.com/gileredman/reinstall/refs/heads/main/reinstall.sh
+curl -O https://raw.githubusercontent.com/derashanti/reinstall/refs/heads/main/reinstall.sh
 
 # Display menu
 display_menu() {
