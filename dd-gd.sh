@@ -1,20 +1,103 @@
-#!/bin/sh
-echo "请选择您需要的镜像包:"
-echo "  1) Windows 2012"
-echo "  2) Windows 2016"
-echo "  3) Windows 2019"
-echo "  4) Windows 2022"
-echo "  5) Windows 10"
-echo "  6) Windows 11"
-echo ""
-echo -n "请输入编号: "
-read N
-case $N in
-  1) wget -O- 'https://bit.ly/WIN12XZ' | xzcat | dd of=/dev/vda;;
-  2) wget -O- 'https://bit.ly/WIN16XZ' | xzcat | dd of=/dev/vdb ;;
-  3) wget -O- 'https://bit.ly/WIN19XZ' | xzcat | dd of=/dev/vda ;;
-  4) wget -qO- inst.sh|bash -s - -t https://www.dropbox.com/scl/fi/e9b50eetnku99eec5m4nz/windows2022.gz?rlkey=upm0cm830j9aplkad7ngbmqpm&st=lbo6qgk7&dl=0 ;;
-  5) wget -O- 'https://bit.ly/WIN10XZ' | xzcat | dd of=/dev/vdb ;;
-  6) wget -O- 'https://bit.ly/4afmzIk' | xzcat | dd of=/dev/sda ;;
-  *) echo "Wrong input!" ;;
-esac 
+#!/bin/bash
+
+set -e
+
+echo "========================================"
+echo "     ENABLE ROOT PASSWORD SSH LOGIN"
+echo "========================================"
+echo
+
+if [ "$EUID" -ne 0 ]; then
+    echo "[ERROR] Script harus dijalankan sebagai root."
+    exit 1
+fi
+
+# Input password
+while true; do
+    read -s -p "Masukkan password root baru: " ROOT_PASSWORD
+    echo
+
+    read -s -p "Ulangi password root: " ROOT_PASSWORD_CONFIRM
+    echo
+
+    if [ "$ROOT_PASSWORD" != "$ROOT_PASSWORD_CONFIRM" ]; then
+        echo
+        echo "[ERROR] Password tidak sama. Silakan coba lagi."
+        echo
+        continue
+    fi
+
+    if [ -z "$ROOT_PASSWORD" ]; then
+        echo
+        echo "[ERROR] Password tidak boleh kosong."
+        echo
+        continue
+    fi
+
+    break
+done
+
+echo
+echo "[1/4] Mengatur password root..."
+
+echo "root:$ROOT_PASSWORD" | chpasswd
+
+echo "[OK] Password root berhasil diubah."
+
+# Backup konfigurasi SSH
+echo
+echo "[2/4] Backup konfigurasi SSH..."
+
+cp /etc/ssh/sshd_config \
+/etc/ssh/sshd_config.backup.$(date +%Y%m%d-%H%M%S)
+
+# Buat konfigurasi SSH
+echo
+echo "[3/4] Mengaktifkan login root menggunakan password..."
+
+mkdir -p /etc/ssh/sshd_config.d
+
+cat > /etc/ssh/sshd_config.d/99-root-password.conf <<'EOF'
+PermitRootLogin yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication yes
+UsePAM yes
+EOF
+
+# Validasi SSH
+echo
+echo "[4/4] Mengecek konfigurasi SSH..."
+
+if sshd -t; then
+    echo "[OK] Konfigurasi SSH valid."
+else
+    echo "[ERROR] Konfigurasi SSH tidak valid."
+    exit 1
+fi
+
+# Restart SSH
+if systemctl restart ssh 2>/dev/null; then
+    echo "[OK] SSH berhasil direstart."
+elif systemctl restart sshd 2>/dev/null; then
+    echo "[OK] SSHD berhasil direstart."
+else
+    echo "[ERROR] Gagal restart SSH."
+    exit 1
+fi
+
+echo
+echo "========================================"
+echo "          BERHASIL"
+echo "========================================"
+echo
+echo "Login VPS sekarang bisa menggunakan:"
+echo
+echo "Username : root"
+echo "Password : password yang baru dibuat"
+echo
+echo "Contoh:"
+echo "ssh root@IP_VPS"
+echo
+echo "JANGAN tutup koneksi SSH saat ini sebelum"
+echo "memastikan login password berhasil."
+echo
